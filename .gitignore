@@ -1,0 +1,15 @@
+.idea/
+.vs/
+.vscode/
+models/
+vendor/
+
+*~
+*.bak
+*.sublime-project
+*.sublime-workspace
+*.upx
+
+.DS_Store
+reverse
+reverse.exe

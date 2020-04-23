@@ -1,0 +1,26 @@
+application:
+   debug: true
+   plural_table: false  #表名是否使用复数
+
+connections:
+   default:
+      driver_name: "mysql"
+      table_prefix: "t_"
+      read_only: false
+      params:
+         host: "127.0.0.1"
+         port: 3306
+         username: "dba"
+         password: "pass"
+         database: "db_test"
+         options: { charset: "utf8mb4" }
+
+reverse_targets:
+   -  type: "codes"
+      language: "golang"
+      multiple_files: false
+      output_dir: "./models"
+      gen_json_tag: true
+      gen_table_name: true
+      exclude_tables:
+         - "people"
