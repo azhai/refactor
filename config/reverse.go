@@ -39,13 +39,15 @@ type ReverseTarget struct {
 	TablePrefix   string   `yaml:"table_prefix"`
 	Language      string   `yaml:"language"`
 
-	GenJsonTag   bool              `yaml:"gen_json_tag"`
-	GenTableName bool              `yaml:"gen_table_name"`
-	Funcs        map[string]string `yaml:"funcs"`
-	Formatter    string            `yaml:"formatter"`
-	Importter    string            `yaml:"importter"`
-	ExtName      string            `yaml:"ext_name"`
-	NameSpace    string            `yaml:"name_space"`
+	Funcs     map[string]string `yaml:"funcs"`
+	Formatter string            `yaml:"formatter"`
+	Importter string            `yaml:"importter"`
+	ExtName   string            `yaml:"ext_name"`
+
+	NameSpace    string `yaml:"name_space"`
+	GenJsonTag   bool   `yaml:"gen_json_tag"`
+	GenTableName bool   `yaml:"gen_table_name"`
+	ApplyMixins  bool   `yaml:"apply_mixins"`
 }
 
 func (t ReverseTarget) GetFileName(name string) string {

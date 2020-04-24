@@ -111,6 +111,10 @@ func Reverse(source *config.DataSource, target *config.ReverseTarget) error {
 	if target.Language != "golang" {
 		return nil
 	}
+	var _err error
+	if target.ApplyMixins {
+		_err = rewrite.ScanModelDir(target.OutputDir, true)
+	}
 
 	var tmpl *template.Template
 	if isRedis {
@@ -119,13 +123,16 @@ func Reverse(source *config.DataSource, target *config.ReverseTarget) error {
 		tmpl = language.GetGolangTemplate("conn")
 	}
 	buf := new(bytes.Buffer)
-	tmpl.Execute(buf, map[string]interface{}{
+	_ = tmpl.Execute(buf, map[string]interface{}{
 		"Target":    target,
 		"NameSpace": target.NameSpace,
 		"ConnKey":   source.ConnKey,
 	})
 	fileName := target.GetFileName("init")
 	_, err := formatter(fileName, buf.Bytes())
+	if err == nil {
+		err = _err
+	}
 	return err
 }
 
@@ -214,9 +221,9 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 	if !target.MultipleFiles {
 		packages := importter(tables)
 		if err = tmpl.Execute(buf, map[string]interface{}{
-			"Target":    target,
-			"Tables":    tables,
-			"Imports":   packages,
+			"Target":  target,
+			"Tables":  tables,
+			"Imports": packages,
 		}); err != nil {
 			return err
 		}
@@ -230,9 +237,9 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 			packages := importter(tbs)
 			buf.Reset()
 			if err = tmpl.Execute(buf, map[string]interface{}{
-				"Target":    target,
-				"Tables":    tbs,
-				"Imports":   packages,
+				"Target":  target,
+				"Tables":  tbs,
+				"Imports": packages,
 			}); err != nil {
 				return err
 			}

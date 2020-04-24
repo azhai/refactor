@@ -3,6 +3,14 @@ application:
    plural_table: false  #表名是否使用复数
 
 connections:
+   cache:
+      driver_name: "redis"
+      params:
+         host: "127.0.0.1"
+         port: 6379
+         password: ""
+         database: "0"
+
    default:
       driver_name: "mysql"
       table_prefix: "t_"
@@ -20,7 +28,8 @@ reverse_targets:
       language: "golang"
       multiple_files: false
       output_dir: "./models"
-      gen_json_tag: true
-      gen_table_name: true
+      gen_json_tag: true   # 生成JSON标签
+      gen_table_name: true # 生成TableName()方法
+      apply_mixins: true   # 使用已知的Mixin替换部分字段
       exclude_tables:
          - "people"

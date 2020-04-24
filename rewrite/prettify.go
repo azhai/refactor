@@ -10,8 +10,17 @@ import (
 
 const (
 	DEFAULT_FILE_MODE = 0644
-	DEFAULT_DIR_MODE = 0755
+	DEFAULT_DIR_MODE  = 0755
 )
+
+// 格式化代码，如果出错返回原内容
+func FormatGolangCode(src []byte) ([]byte, error) {
+	_src, err := format.Source(src)
+	if err == nil {
+		src = _src
+	}
+	return src, err
+}
 
 func WriteCodeFile(fileName string, sourceCode []byte) ([]byte, error) {
 	err := ioutil.WriteFile(fileName, sourceCode, DEFAULT_FILE_MODE)
@@ -20,7 +29,7 @@ func WriteCodeFile(fileName string, sourceCode []byte) ([]byte, error) {
 
 func WriteGolangFile(fileName string, sourceCode []byte) ([]byte, error) {
 	// Formart/Prettify the code 格式化代码
-	srcCode, err := format.Source(sourceCode)
+	srcCode, err := FormatGolangCode(sourceCode)
 	if err != nil {
 		return sourceCode, err
 	}

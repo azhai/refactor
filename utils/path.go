@@ -7,7 +7,6 @@ import (
 	"strings"
 )
 
-
 // 遍历目录下的文件
 func FindFiles(dir, ext string) (map[string]os.FileInfo, error) {
 	var result = make(map[string]os.FileInfo)
