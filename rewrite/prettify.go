@@ -4,10 +4,14 @@ import (
 	"go/format"
 	"io/ioutil"
 
+	"gitea.com/azhai/refactor/utils"
 	"golang.org/x/tools/imports"
 )
 
-const DEFAULT_FILE_MODE = 0644
+const (
+	DEFAULT_FILE_MODE = 0644
+	DEFAULT_DIR_MODE = 0755
+)
 
 func WriteCodeFile(fileName string, sourceCode []byte) ([]byte, error) {
 	err := ioutil.WriteFile(fileName, sourceCode, DEFAULT_FILE_MODE)
@@ -30,4 +34,27 @@ func WriteGolangFile(fileName string, sourceCode []byte) ([]byte, error) {
 		return srcCode, err
 	}
 	return WriteCodeFile(fileName, dstCode)
+}
+
+// 将包中的Go文件格式化，如果提供了pkgname则用作新包名
+func RewritePackage(pkgpath, pkgname string) error {
+	if pkgname != "" {
+		// TODO: 替换包名
+	}
+	files, err := utils.FindFiles(pkgpath, ".go")
+	if err != nil {
+		return err
+	}
+	var content []byte
+	for fileName := range files {
+		content, err = ioutil.ReadFile(fileName)
+		if err != nil {
+			break
+		}
+		_, err = WriteGolangFile(fileName, content)
+		if err != nil {
+			break
+		}
+	}
+	return err
 }

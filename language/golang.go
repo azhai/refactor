@@ -26,7 +26,7 @@ var Golang = Language{
 		"Type": typestring,
 		"Tag":  tag,
 	},
-	Formatter: rewrite.WriteGolangFile,
+	Formatter: rewrite.WriteCodeFile,
 	Importter: genGoImports,
 	Packager:  genNameSpace,
 	ExtName:   ".go",

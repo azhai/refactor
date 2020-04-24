@@ -10,7 +10,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"gitea.com/azhai/refactor/config"
@@ -56,10 +55,10 @@ func reverseFromReader(rd io.Reader) error {
 }
 
 func TestReverse(t *testing.T) {
-	err := reverse("../testdata/goxorm.yml")
+	err := reverse("./testdata/goxorm.yml")
 	assert.NoError(t, err)
 
-	bs, err := ioutil.ReadFile("../models/models.go")
+	bs, err := ioutil.ReadFile("./models/models.go")
 	assert.NoError(t, err)
 	assert.EqualValues(t, result, string(bs))
 }
@@ -80,21 +79,7 @@ func TestReverse2(t *testing.T) {
 
 	assert.NoError(t, e.Sync2(new(Outfw)))
 
-	err = reverseFromReader(strings.NewReader(`
-kind: reverse
-name: mydb
-source:
-  database: sqlite3
-  conn_str: '../testdata/test.db'
-targets:
-- type: codes
-  include_tables:
-  - a
-  - b
-  exclude_tables:
-  - c
-  language: golang
-  output_dir: ../models
-`))
+	fp, err := os.Open("./testdata/goxorm.yml")
+	err = reverseFromReader(fp)
 	assert.NoError(t, err)
 }

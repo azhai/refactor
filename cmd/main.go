@@ -6,7 +6,6 @@ import (
 
 	"gitea.com/azhai/refactor"
 	"gitea.com/azhai/refactor/config"
-	_ "gitea.com/azhai/refactor/language"
 	_ "github.com/denisenkom/go-mssqldb"
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
@@ -42,7 +41,7 @@ func ReverseAction(ctx *cli.Context) error {
 			continue
 		}
 		for _, target := range cfg.ReverseTargets {
-			target = target.FixTarget(d.ConnKey, d.TablePrefix)
+			target = target.MergeOptions(d.ConnKey, d.TablePrefix)
 			if err := refactor.Reverse(d, &target); err != nil {
 				return err
 			}

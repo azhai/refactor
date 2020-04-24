@@ -2,7 +2,6 @@ package dialect
 
 import (
 	"fmt"
-
 	// _ "github.com/go-sql-driver/mysql"
 )
 

@@ -30,7 +30,7 @@ type ConnConfig struct {
 }
 
 type DataSource struct {
-	ConnKey 	string
+	ConnKey     string
 	TablePrefix string
 	Dialect     dialect.Dialect
 	*ReverseSource
@@ -91,7 +91,7 @@ func NewDataSource(k string, c ConnConfig) *DataSource {
 	if d.Dialect != nil {
 		d.ReverseSource = &ReverseSource{
 			Database: d.Dialect.Name(),
-			ConnStr: d.Dialect.GetDSN(c.Params),
+			ConnStr:  d.Dialect.GetDSN(c.Params),
 		}
 	}
 	return d

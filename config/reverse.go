@@ -5,7 +5,10 @@
 package config
 
 import (
+	"os"
 	"path/filepath"
+
+	"gitea.com/azhai/refactor/rewrite"
 )
 
 // ReverseConfig represents a reverse configuration
@@ -42,21 +45,23 @@ type ReverseTarget struct {
 	Formatter    string            `yaml:"formatter"`
 	Importter    string            `yaml:"importter"`
 	ExtName      string            `yaml:"ext_name"`
+	NameSpace    string            `yaml:"name_space"`
 }
 
-func (t ReverseTarget) FixTarget(name, tablePrefix string) ReverseTarget {
+func (t ReverseTarget) GetFileName(name string) string {
+	_ = os.MkdirAll(t.OutputDir, rewrite.DEFAULT_DIR_MODE)
+	return filepath.Join(t.OutputDir, name+t.ExtName)
+}
+
+func (t ReverseTarget) MergeOptions(name, tablePrefix string) ReverseTarget {
 	if t.Type == "codes" && t.Language == "" {
 		t.Language = "golang"
-	}
-	if t.TablePrefix == "" {
-		t.TablePrefix = tablePrefix
 	}
 	if name != "" {
 		t.OutputDir = filepath.Join(t.OutputDir, name)
 	}
+	if t.TablePrefix == "" {
+		t.TablePrefix = tablePrefix
+	}
 	return t
-}
-
-func (t ReverseTarget) GetFileName(name string) string {
-	return filepath.Join(t.OutputDir, name+t.ExtName)
 }

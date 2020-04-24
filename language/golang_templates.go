@@ -6,33 +6,33 @@ import (
 	"strings"
 )
 
-
 var (
-	initTemplates        map[string]*template.Template
+	initTemplates map[string]*template.Template
 
-	golangModelTemplate = fmt.Sprintf(`package {{.NameSpace}}
+	golangModelTemplate = fmt.Sprintf(`package {{.Target.NameSpace}}
+
 {{$ilen := len .Imports}}{{if gt $ilen 0}}import (
 	{{range .Imports}}"{{.}}"{{end}}
 ){{end}}
-{{$gen_json := .Target.GenJsonTag}}
-{{$gen_table := .Target.GenTableName}}
+{{$gen_json := .Target.GenJsonTag -}}
+{{$gen_table := .Target.GenTableName -}}
 
 {{range $table_name, $table := .Tables}}
 {{$class := TableMapper $table.Name}}
-type {{$class}} struct {
-{{ range $table.ColumnsSeq }}
-{{$col := $table.GetColumn .}} {{ColumnMapper $col.Name}}	{{Type $col}} %s{{Tag $table $col $gen_json}}%s {{end}}
+type {{$class}} struct { {{- range $table.ColumnsSeq}}{{$col := $table.GetColumn .}}
+	{{ColumnMapper $col.Name}} {{Type $col}} %s{{Tag $table $col $gen_json}}%s{{end}}
 }
 
-{{if $gen_table}}
+{{if $gen_table -}}
 func ({{$class}}) TableName() string {
 	return "{{$table_name}}"
 }
-{{end}}
-{{end}}
+{{end -}}
+{{end -}}
 `, "`", "`")
 
-	golangConnTemplate = `package {{.NameSpace}}
+	golangConnTemplate = `package {{.Target.NameSpace}}
+
 import (
 	"gitea.com/azhai/refactor/config"
 	"gitea.com/azhai/refactor/language/common"
@@ -70,7 +70,8 @@ func Table(name interface{}) *xorm.Session {
 }
 `
 
-	golangCacheTemplate = `package {{.NameSpace}}
+	golangCacheTemplate = `package {{.Target.NameSpace}}
+
 import (
 	"gitea.com/azhai/refactor/config"
 	"gitea.com/azhai/refactor/language/common"
@@ -78,7 +79,7 @@ import (
 )
 
 var (
-	sessreg *session.SessionRegistry
+	sessreg *common.SessionRegistry
 )
 
 // 初始化、连接数据库和缓存
@@ -113,7 +114,7 @@ func DelSession(token string) bool {
 `
 )
 
-func GetLocalTemplate(name string) *template.Template {
+func GetGolangTemplate(name string) *template.Template {
 	var content string
 	if strings.Contains(name, "conn") || strings.Contains(name, "Conn") {
 		name, content = "conn", golangConnTemplate

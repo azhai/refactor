@@ -6,6 +6,9 @@ package language
 
 import (
 	"html/template"
+	"strings"
+
+	"gitea.com/azhai/refactor/config"
 	"xorm.io/xorm/schemas"
 )
 
@@ -37,4 +40,21 @@ func RegisterLanguage(l *Language) {
 // GetLanguage returns a language if exists
 func GetLanguage(name string) *Language {
 	return languages[name]
+}
+
+func (l *Language) FixTarget(target *config.ReverseTarget) {
+	if target.ExtName == "" && l.ExtName != "" {
+		if !strings.HasPrefix(l.ExtName, ".") {
+			l.ExtName = "." + l.ExtName
+		}
+		target.ExtName = l.ExtName
+	}
+	if target.NameSpace == "" {
+		if pck := l.Packager; pck != nil {
+			target.NameSpace = pck(target.OutputDir)
+		}
+		if target.NameSpace == "" {
+			target.NameSpace = "models"
+		}
+	}
 }

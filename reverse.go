@@ -7,14 +7,14 @@ package refactor
 import (
 	"bytes"
 	"errors"
-	"gitea.com/azhai/refactor/language"
-	"gitea.com/azhai/refactor/rewrite"
 	"html/template"
 	"io/ioutil"
 	"os"
 	"strings"
 
 	"gitea.com/azhai/refactor/config"
+	"gitea.com/azhai/refactor/language"
+	"gitea.com/azhai/refactor/rewrite"
 	"github.com/gobwas/glob"
 	"github.com/grsmv/inflect"
 	"xorm.io/xorm"
@@ -26,11 +26,13 @@ var (
 	formatters   = map[string]language.Formatter{}
 	importters   = map[string]language.Importter{}
 	defaultFuncs = template.FuncMap{
-		"Lower":      strings.ToLower,
-		"Upper":      strings.ToUpper,
-		"Title":      strings.Title,
-		"Camelize":   inflect.Camelize,
-		"Underscore": inflect.Underscore,
+		"Lower":       strings.ToLower,
+		"Upper":       strings.ToUpper,
+		"Title":       strings.Title,
+		"Camelize":    inflect.Camelize,
+		"Underscore":  inflect.Underscore,
+		"Pluralize":   inflect.Pluralize,
+		"Singularize": inflect.Singularize,
 	}
 )
 
@@ -88,10 +90,21 @@ func convertMapper(mapname string) names.Mapper {
 }
 
 func Reverse(source *config.DataSource, target *config.ReverseTarget) error {
+	formatter := formatters[target.Formatter]
+	lang := language.GetLanguage(target.Language)
+	if lang != nil {
+		lang.FixTarget(target)
+		formatter = lang.Formatter
+	}
+	if formatter == nil {
+		formatter = rewrite.WriteCodeFile
+	}
+
 	isRedis := true
 	if source.ReverseSource.Database != "redis" {
 		isRedis = false
-		if err := RunReverse(source.ReverseSource, target); err != nil {
+		err := RunReverse(source.ReverseSource, target)
+		if err != nil {
 			return err
 		}
 	}
@@ -99,29 +112,16 @@ func Reverse(source *config.DataSource, target *config.ReverseTarget) error {
 		return nil
 	}
 
-	var formatter language.Formatter
-	nameSpace := "models"
-	lang := language.GetLanguage(target.Language)
-	if lang != nil {
-		formatter = lang.Formatter
-		packager := lang.Packager
-		if packager != nil {
-			nameSpace = packager(target.OutputDir)
-		}
-	}
-	if formatter == nil {
-		formatter = rewrite.WriteGolangFile
-	}
-
 	var tmpl *template.Template
 	if isRedis {
-		tmpl = language.GetLocalTemplate("cache")
+		tmpl = language.GetGolangTemplate("cache")
 	} else {
-		tmpl = language.GetLocalTemplate("conn")
+		tmpl = language.GetGolangTemplate("conn")
 	}
 	buf := new(bytes.Buffer)
-	tmpl.Execute(buf, map[string]interface{} {
-		"NameSpace": nameSpace,
+	tmpl.Execute(buf, map[string]interface{}{
+		"Target":    target,
+		"NameSpace": target.NameSpace,
 		"ConnKey":   source.ConnKey,
 	})
 	fileName := target.GetFileName("init")
@@ -148,7 +148,6 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 	funcs := newFuncs()
 	formatter := formatters[target.Formatter]
 	importter := importters[target.Importter]
-	var packager language.Packager
 
 	// load template
 	var bs []byte
@@ -174,11 +173,6 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 		if importter == nil {
 			importter = lang.Importter
 		}
-		packager = lang.Packager
-		target.ExtName = lang.ExtName
-	}
-	if !strings.HasPrefix(target.ExtName, ".") {
-		target.ExtName = "." + target.ExtName
 	}
 
 	var tableMapper = convertMapper(target.TableMapper)
@@ -216,15 +210,10 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 		return err
 	}
 
-	nameSpace := "models"
-	if packager != nil {
-		nameSpace = packager(target.OutputDir)
-	}
 	buf := new(bytes.Buffer)
 	if !target.MultipleFiles {
 		packages := importter(tables)
 		if err = tmpl.Execute(buf, map[string]interface{}{
-			"NameSpace": nameSpace,
 			"Target":    target,
 			"Tables":    tables,
 			"Imports":   packages,
@@ -237,11 +226,10 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 		}
 	} else {
 		for tableName, table := range tables {
-			tbs := map[string]*schemas.Table{tableName:table}
+			tbs := map[string]*schemas.Table{tableName: table}
 			packages := importter(tbs)
 			buf.Reset()
 			if err = tmpl.Execute(buf, map[string]interface{}{
-				"NameSpace": nameSpace,
 				"Target":    target,
 				"Tables":    tbs,
 				"Imports":   packages,

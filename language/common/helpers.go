@@ -9,7 +9,6 @@ import (
  */
 type FilterFunc = func(query *xorm.Session) *xorm.Session
 
-
 /**
  * 翻页查询，out参数需要传引用
  * 使用方法 total, err := Paginate(query, &rows, pageno, pagesize)
