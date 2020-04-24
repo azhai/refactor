@@ -2,19 +2,19 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package main
+package refactor
 
 import (
 	"bytes"
 	"errors"
+	"gitea.com/azhai/refactor/language"
+	"gitea.com/azhai/refactor/rewrite"
 	"html/template"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"gitea.com/azhai/refactor/config"
-	"gitea.com/azhai/refactor/language"
 	"github.com/gobwas/glob"
 	"github.com/grsmv/inflect"
 	"xorm.io/xorm"
@@ -87,19 +87,61 @@ func convertMapper(mapname string) names.Mapper {
 	}
 }
 
+func Reverse(source *config.DataSource, target *config.ReverseTarget) error {
+	isRedis := true
+	if source.ReverseSource.Database != "redis" {
+		isRedis = false
+		if err := RunReverse(source.ReverseSource, target); err != nil {
+			return err
+		}
+	}
+	if target.Language != "golang" {
+		return nil
+	}
+
+	var formatter language.Formatter
+	nameSpace := "models"
+	lang := language.GetLanguage(target.Language)
+	if lang != nil {
+		formatter = lang.Formatter
+		packager := lang.Packager
+		if packager != nil {
+			nameSpace = packager(target.OutputDir)
+		}
+	}
+	if formatter == nil {
+		formatter = rewrite.WriteGolangFile
+	}
+
+	var tmpl *template.Template
+	if isRedis {
+		tmpl = language.GetLocalTemplate("cache")
+	} else {
+		tmpl = language.GetLocalTemplate("conn")
+	}
+	buf := new(bytes.Buffer)
+	tmpl.Execute(buf, map[string]interface{} {
+		"NameSpace": nameSpace,
+		"ConnKey":   source.ConnKey,
+	})
+	fileName := target.GetFileName("init")
+	_, err := formatter(fileName, buf.Bytes())
+	return err
+}
+
 func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) error {
 	orm, err := xorm.NewEngine(source.Database, source.ConnStr)
 	if err != nil {
 		return err
 	}
 
-	tables, err := orm.DBMetas()
+	tableSchemas, err := orm.DBMetas()
 	if err != nil {
 		return err
 	}
 
 	// filter tables according includes and excludes
-	tables = filterTables(tables, target)
+	tableSchemas = filterTables(tableSchemas, target)
 
 	// load configuration from language
 	lang := language.GetLanguage(target.Language)
@@ -157,13 +199,16 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 		return err
 	}
 
-	for _, table := range tables {
+	tables := make(map[string]*schemas.Table)
+	for _, table := range tableSchemas {
+		tableName := table.Name
 		if target.TablePrefix != "" {
 			table.Name = strings.TrimPrefix(table.Name, target.TablePrefix)
 		}
 		for _, col := range table.Columns() {
 			col.FieldName = colMapper.Table2Obj(col.Name)
 		}
+		tables[tableName] = table
 	}
 
 	err = os.MkdirAll(target.OutputDir, os.ModePerm)
@@ -175,57 +220,39 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 	if packager != nil {
 		nameSpace = packager(target.OutputDir)
 	}
+	buf := new(bytes.Buffer)
 	if !target.MultipleFiles {
 		packages := importter(tables)
-
-		newbytes := bytes.NewBufferString("")
-		err = tmpl.Execute(newbytes, map[string]interface{}{
+		if err = tmpl.Execute(buf, map[string]interface{}{
 			"NameSpace": nameSpace,
 			"Target":    target,
 			"Tables":    tables,
 			"Imports":   packages,
-		})
-		if err != nil {
+		}); err != nil {
 			return err
 		}
-
-		sourceCode, err := ioutil.ReadAll(newbytes)
-		if err != nil {
-			return err
-		}
-
-		fileName := filepath.Join(target.OutputDir, "models"+target.ExtName)
-		if _, err = formatter(fileName, sourceCode); err != nil {
+		fileName := target.GetFileName("models")
+		if _, err = formatter(fileName, buf.Bytes()); err != nil {
 			return err
 		}
 	} else {
-		for _, table := range tables {
-			// imports
-			tbs := []*schemas.Table{table}
+		for tableName, table := range tables {
+			tbs := map[string]*schemas.Table{tableName:table}
 			packages := importter(tbs)
-
-			newbytes := bytes.NewBufferString("")
-			err = tmpl.Execute(newbytes, map[string]interface{}{
+			buf.Reset()
+			if err = tmpl.Execute(buf, map[string]interface{}{
 				"NameSpace": nameSpace,
 				"Target":    target,
 				"Tables":    tbs,
 				"Imports":   packages,
-			})
-			if err != nil {
+			}); err != nil {
 				return err
 			}
-
-			sourceCode, err := ioutil.ReadAll(newbytes)
-			if err != nil {
-				return err
-			}
-
-			fileName := filepath.Join(target.OutputDir, table.Name+target.ExtName)
-			if _, err = formatter(fileName, sourceCode); err != nil {
+			fileName := target.GetFileName(table.Name)
+			if _, err = formatter(fileName, buf.Bytes()); err != nil {
 				return err
 			}
 		}
 	}
-
 	return nil
 }

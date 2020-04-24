@@ -20,7 +20,7 @@ import (
 // Golang represents a golang language
 var Golang = Language{
 	Name:     "golang",
-	Template: defaultGolangTemplate,
+	Template: golangModelTemplate,
 	Types:    map[string]string{},
 	Funcs: template.FuncMap{
 		"Type": typestring,
@@ -37,32 +37,9 @@ func init() {
 }
 
 var (
-	errBadComparisonType  = errors.New("invalid type for comparison")
-	errBadComparison      = errors.New("incompatible types for comparison")
-	errNoComparison       = errors.New("missing argument for comparison")
-	defaultGolangTemplate = fmt.Sprintf(`package {{.NameSpace}}
-
-{{$ilen := len .Imports}}{{if gt $ilen 0}}import (
-	{{range .Imports}}"{{.}}"{{end}}
-){{end}}
-{{$table_prefix := .Target.TablePrefix}}
-{{$gen_json := .Target.GenJsonTag}}
-{{$gen_table := .Target.GenTableName}}
-
-{{range .Tables}}
-{{$class := TableMapper .Name}}
-type {{$class}} struct {
-{{$table := .}}{{range .ColumnsSeq}}{{$col := $table.GetColumn .}}	{{ColumnMapper $col.Name}}	{{Type $col}} %s{{Tag $table $col $gen_json}}%s
-{{end}}
-}
-
-{{if $gen_table }}
-func ({{$class}}) TableName() string {
-	return "{{$table_prefix}}{{$table.Name}}"
-}
-{{end}}
-{{end}}
-`, "`", "`")
+	errBadComparisonType = errors.New("invalid type for comparison")
+	errBadComparison     = errors.New("incompatible types for comparison")
+	errNoComparison      = errors.New("missing argument for comparison")
 )
 
 type kind int
@@ -108,7 +85,7 @@ func genNameSpace(targetDir string) string {
 	return nameSpace
 }
 
-func genGoImports(tables []*schemas.Table) []string {
+func genGoImports(tables map[string]*schemas.Table) []string {
 	imports := make(map[string]string)
 	results := make([]string, 0)
 	for _, table := range tables {

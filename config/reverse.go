@@ -4,7 +4,9 @@
 
 package config
 
-import "path/filepath"
+import (
+	"path/filepath"
+)
 
 // ReverseConfig represents a reverse configuration
 type ReverseConfig struct {
@@ -53,4 +55,8 @@ func (t ReverseTarget) FixTarget(name, tablePrefix string) ReverseTarget {
 		t.OutputDir = filepath.Join(t.OutputDir, name)
 	}
 	return t
+}
+
+func (t ReverseTarget) GetFileName(name string) string {
+	return filepath.Join(t.OutputDir, name+t.ExtName)
 }

@@ -29,6 +29,13 @@ type ConnConfig struct {
 	Params      dialect.ConnParams
 }
 
+type DataSource struct {
+	ConnKey 	string
+	TablePrefix string
+	Dialect     dialect.Dialect
+	*ReverseSource
+}
+
 func GetSettings() *Settings {
 	if cfg == nil {
 		cfg = new(Settings)
@@ -60,16 +67,32 @@ func SaveSettings(file string) error {
 	return err
 }
 
-func (cfg Settings) GetSource(name string) (ReverseSource, ConnConfig) {
-	var ok bool
-	src, c := ReverseSource{}, ConnConfig{}
-	if c, ok = cfg.Connections[name]; !ok {
-		return src, c
+func (cfg *Settings) GetDataSources(names []string) (ds []*DataSource) {
+	if len(names) == 0 {
+		for name, c := range cfg.Connections {
+			ds = append(ds, NewDataSource(name, c))
+		}
+		return
+	} else {
+		for _, name := range names {
+			c, ok := cfg.Connections[name]
+			if !ok {
+				continue
+			}
+			ds = append(ds, NewDataSource(name, c))
+		}
+		return
 	}
-	d := dialect.GetDialectByName(c.DriverName)
-	if d != nil {
-		src.Database = d.Name()
-		src.ConnStr = d.GetDSN(c.Params)
+}
+
+func NewDataSource(k string, c ConnConfig) *DataSource {
+	d := &DataSource{ConnKey: k, TablePrefix: c.TablePrefix}
+	d.Dialect = dialect.GetDialectByName(c.DriverName)
+	if d.Dialect != nil {
+		d.ReverseSource = &ReverseSource{
+			Database: d.Dialect.Name(),
+			ConnStr: d.Dialect.GetDSN(c.Params),
+		}
 	}
-	return src, c
+	return d
 }

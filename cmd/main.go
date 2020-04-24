@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"os"
 
+	"gitea.com/azhai/refactor"
 	"gitea.com/azhai/refactor/config"
+	_ "gitea.com/azhai/refactor/language"
 	_ "github.com/denisenkom/go-mssqldb"
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
@@ -33,23 +35,15 @@ func ReverseAction(ctx *cli.Context) error {
 		return err
 	}
 
-	var names []string
-	if ctx.NArg() > 0 {
-		names = ctx.Args().Slice()
-	} else {
-		for k := range cfg.Connections {
-			names = append(names, k)
-		}
-	}
-
-	for _, name := range names {
-		source, dbconf := cfg.GetSource(name)
-		if dbconf.DriverName == "" { // name not exists
+	names := ctx.Args().Slice()
+	ds := cfg.GetDataSources(names)
+	for _, d := range ds {
+		if d.ReverseSource == nil {
 			continue
 		}
 		for _, target := range cfg.ReverseTargets {
-			target = target.FixTarget(name, dbconf.TablePrefix)
-			if err := RunReverse(&source, &target); err != nil {
+			target = target.FixTarget(d.ConnKey, d.TablePrefix)
+			if err := refactor.Reverse(d, &target); err != nil {
 				return err
 			}
 		}

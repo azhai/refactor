@@ -10,7 +10,7 @@ import (
 )
 
 type Formatter func(fileName string, sourceCode []byte) ([]byte, error)
-type Importter func(tables []*schemas.Table) []string
+type Importter func(tables map[string]*schemas.Table) []string
 type Packager func(targetDir string) string
 
 // Language represents a languages supported when reverse codes
