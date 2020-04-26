@@ -2,6 +2,16 @@ application:
    debug: true
    plural_table: false  #表名是否使用复数
 
+mysql: &mysql  #共用数据库配置
+   driver_name: "mysql"
+   params:
+      host: "127.0.0.1"
+      port: 3306
+      username: "dba"
+      password: "pass"
+      database: "db_test"
+      options: { charset: "utf8mb4" }
+
 connections:
    cache:
       driver_name: "redis"
@@ -11,17 +21,23 @@ connections:
          password: ""
          database: "0"
 
-   default:
-      driver_name: "mysql"
-      table_prefix: "t_"
+   default:  #默认数据库
       read_only: false
-      params:
-         host: "127.0.0.1"
-         port: 3306
-         username: "dba"
-         password: "pass"
-         database: "db_test"
-         options: { charset: "utf8mb4" }
+      partition:
+         table_prefix: "t_"
+         exclude_tables:
+            - "busi_*"
+            - "stat_*"
+      <<: *mysql  #引用mysql配置
+
+   business:  #业务数据库
+      read_only: false
+      partition:
+         table_prefix: ""
+         include_tables:
+            - "busi_*"
+            - "stat_*"
+      <<: *mysql  #引用mysql配置
 
 reverse_targets:
    -  type: "codes"
@@ -30,6 +46,5 @@ reverse_targets:
       output_dir: "./models"
       gen_json_tag: true   # 生成JSON标签
       gen_table_name: true # 生成TableName()方法
+      gen_query_methods: true # 生成查询方法
       apply_mixins: true   # 使用已知的Mixin替换部分字段
-      exclude_tables:
-         - "people"

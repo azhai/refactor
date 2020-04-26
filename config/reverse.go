@@ -67,7 +67,7 @@ func (t ReverseTarget) GetFileName(name string) string {
 	return filepath.Join(t.OutputDir, name+t.ExtName)
 }
 
-func (t ReverseTarget) MergeOptions(name, tablePrefix string) ReverseTarget {
+func (t ReverseTarget) MergeOptions(name string, part PartConfig) ReverseTarget {
 	if t.Type == "codes" && t.Language == "" {
 		t.Language = "golang"
 	}
@@ -75,7 +75,13 @@ func (t ReverseTarget) MergeOptions(name, tablePrefix string) ReverseTarget {
 		t.OutputDir = filepath.Join(t.OutputDir, name)
 	}
 	if t.TablePrefix == "" {
-		t.TablePrefix = tablePrefix
+		t.TablePrefix = part.TablePrefix
+	}
+	if t.IncludeTables == nil {
+		t.IncludeTables = part.IncludeTables
+	}
+	if t.ExcludeTables == nil {
+		t.ExcludeTables = part.ExcludeTables
 	}
 	return t
 }

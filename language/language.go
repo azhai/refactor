@@ -13,7 +13,7 @@ import (
 )
 
 type Formatter func(fileName string, sourceCode []byte) ([]byte, error)
-type Importter func(tables map[string]*schemas.Table) []string
+type Importter func(tables map[string]*schemas.Table) map[string]string
 type Packager func(targetDir string) string
 
 // Language represents a languages supported when reverse codes
@@ -57,4 +57,14 @@ func (l *Language) FixTarget(target *config.ReverseTarget) {
 			target.NameSpace = "models"
 		}
 	}
+}
+
+func NewTemplate(name, content string, funcs template.FuncMap) *template.Template {
+	t := template.New(name).Funcs(funcs)
+	tmpl, err := t.Parse(content)
+	if err != nil {
+		panic(err)
+	}
+	initTemplates[name] = tmpl
+	return tmpl
 }

@@ -20,10 +20,10 @@ const (
 	SESS_LIST_SEP   = ";"    // 角色名之间的分隔符
 )
 
-func InitCache(cfg *config.Settings, name string, verbose bool) (*SessionRegistry, error) {
+func InitCache(cfg config.IConnectSettings, name string, verbose bool) (*SessionRegistry, error) {
 	var sessreg *SessionRegistry
-	c, ok := cfg.Connections[name]
-	if !ok || c.DriverName != "redis" {
+	c := cfg.GetConnection(name)
+	if c.DriverName != "redis" {
 		return nil, nil
 	}
 	if verbose {

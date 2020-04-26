@@ -9,13 +9,14 @@ import (
 	"xorm.io/xorm"
 )
 
-func InitConn(cfg *config.Settings, name string, verbose bool) (*xorm.Engine, error) {
+func InitConn(cfg config.IConnectSettings, name string, verbose bool) (*xorm.Engine, error) {
+	c := cfg.GetConnection(name)
+	if c.DriverName == "" || c.DriverName == "redis" {
+		return nil, nil
+	}
 	var drv, dsn string
-	if c, ok := cfg.Connections[name]; ok {
-		d := dialect.GetDialectByName(c.DriverName)
-		if d != nil {
-			drv, dsn = d.Name(), d.GetDSN(c.Params)
-		}
+	if d := dialect.GetDialectByName(c.DriverName); d != nil {
+		drv, dsn = d.Name(), d.GetDSN(c.Params)
 	}
 	if drv == "" || dsn == "" {
 		return nil, nil
@@ -27,6 +28,38 @@ func InitConn(cfg *config.Settings, name string, verbose bool) (*xorm.Engine, er
 		engine.ShowSQL(verbose)
 	}
 	return engine, err
+}
+
+/**
+ * 过滤查询
+ */
+type FilterFunc = func(query *xorm.Session) *xorm.Session
+
+// 计算翻页
+func Paginate(query *xorm.Session, pageno, pagesize int) *xorm.Session {
+	if pagesize < 0 {
+		return query
+	} else if pagesize == 0 {
+		return query.Limit(0)
+	}
+	var offset int
+	if pageno > 0 {
+		offset = (pageno - 1) * pagesize
+	} else if pageno < 0 {
+		total, err := query.Count()
+		if err == nil && total > 0 {
+			offset = NegativeOffset(pageno * pagesize, pagesize, int(total))
+		}
+	}
+	return query.Limit(pagesize, offset)
+}
+
+// 调整从后往前翻页
+func NegativeOffset(offset, pagesize, total int) int {
+	if remain := total % pagesize; remain > 0 {
+		offset += pagesize - remain
+	}
+	return offset + total
 }
 
 /**

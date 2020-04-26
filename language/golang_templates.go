@@ -7,12 +7,12 @@ import (
 )
 
 var (
-	initTemplates map[string]*template.Template
+	initTemplates = make(map[string]*template.Template)
 
 	golangModelTemplate = fmt.Sprintf(`package {{.Target.NameSpace}}
 
 {{$ilen := len .Imports}}{{if gt $ilen 0}}import (
-	{{range .Imports}}"{{.}}"{{end}}
+	{{range $imp, $al := .Imports}}{{$al}} "{{$imp}}"{{end}}
 ){{end}}
 {{$gen_json := .Target.GenJsonTag -}}
 {{$gen_table := .Target.GenTableName -}}
@@ -31,11 +31,50 @@ func ({{$class}}) TableName() string {
 {{end -}}
 `, "`", "`")
 
+	golangQueryTemplate = `{{if not .Target.MultipleFiles}}package {{.Target.NameSpace}}
+
+{{$ilen := len .Imports}}{{if gt $ilen 0}}import (
+	{{range $imp, $al := .Imports}}{{$al}} "{{$imp}}"{{end}}
+){{end}}{{end}}
+
+{{range .Tables}}
+{{$class := TableMapper .Name -}}
+
+func (m *{{$class}}) One(where interface{}, args ...interface{}) (has bool, err error) {
+	query := engine.NewSession().Where(where, args)
+	return query.Get(m)
+}
+
+func (m *{{$class}}) FindOne(filters ...base.FilterFunc) (has bool, err error) {
+	query := engine.NewSession()
+	for _, ft := range filters {
+		query = ft(query)
+	}
+	return query.Get(m)
+}
+
+type {{$class}}Objs []{{$class}}
+
+func (s *{{$class}}Objs) All(pageno, pagesize int, where interface{}, args ...interface{}) (total int64, err error) {
+	query := engine.NewSession().Where(where, args)
+	return base.Paginate(query, pageno, pagesize).FindAndCount(s)
+}
+
+func (s *{{$class}}Objs) FindAll(pageno, pagesize int, filters ...base.FilterFunc) (total int64, err error) {
+	query := engine.NewSession()
+	for _, ft := range filters {
+		query = ft(query)
+	}
+	return base.Paginate(query, pageno, pagesize).FindAndCount(s)
+}
+{{end -}}
+`
+
 	golangConnTemplate = `package {{.Target.NameSpace}}
 
 import (
 	"gitea.com/azhai/refactor/config"
-	"gitea.com/azhai/refactor/language/common"
+	base "gitea.com/azhai/refactor/language/common"
 	_ "github.com/denisenkom/go-mssqldb"
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
@@ -48,9 +87,9 @@ var (
 )
 
 // 初始化、连接数据库和缓存
-func Initialize(cfg *config.Settings, verbose bool) {
+func Initialize(cfg config.IConnectSettings, verbose bool) {
 	var err error
-	engine, err = common.InitConn(cfg, "{{.ConnKey}}", verbose)
+	engine, err = base.InitConn(cfg, "{{.ConnKey}}", verbose)
 	if err != nil || engine == nil {
 		panic(err)
 	}
@@ -74,30 +113,30 @@ func Table(name interface{}) *xorm.Session {
 
 import (
 	"gitea.com/azhai/refactor/config"
-	"gitea.com/azhai/refactor/language/common"
+	base "gitea.com/azhai/refactor/language/common"
 	"xorm.io/xorm"
 )
 
 var (
-	sessreg *common.SessionRegistry
+	sessreg *base.SessionRegistry
 )
 
 // 初始化、连接数据库和缓存
-func Initialize(cfg *config.Settings, verbose bool) {
+func Initialize(cfg config.IConnectSettings, verbose bool) {
 	var err error
-	sessreg, err = common.InitCache(cfg, "{{.ConnKey}}", verbose)
+	sessreg, err = base.InitCache(cfg, "{{.ConnKey}}", verbose)
 	if err != nil {
 		panic(err)
 	}
 }
 
 // 获得当前会话管理器
-func Registry() *common.SessionRegistry {
+func Registry() *base.SessionRegistry {
 	return sessreg
 }
 
 // 获得用户会话
-func Session(token string) *common.Session {
+func Session(token string) *base.Session {
 	if sessreg == nil {
 		return nil
 	}
@@ -112,46 +151,9 @@ func DelSession(token string) bool {
 	return sessreg.DelSession(token)
 }
 `
-
-	golangQueryTemplate = `package {{.Target.NameSpace}}
-
-import (
-	base "gitea.com/azhai/refactor/language/common"
 )
 
-{{$class := TableMapper $table.Name -}}
-{{$classes := DiffPluralize $class "Rows" -}}
-type {{$class}} []{{$class}}
-
-func (m *{{$class}}) One(where interface{}, args ...interface{}) (has bool, err error) {
-	query := engine.NewSession().Where(where, args)
-	return query.Get(&m)
-}
-
-func (m *{{$class}}) FindOne(filters ...base.FilterFunc) (has bool, err error) {
-	query := engine.NewSession()
-	for _, ft := range filters {
-		query = ft(query)
-	}
-	return query.Get(&m)
-}
-
-func (s *{{$classes}}) All(pageno, pagesize int, where interface{}, args ...interface{}) (total int64, err error) {
-	query := engine.NewSession().Where(where, args)
-	return base.Paginate(query, pageno, pagesize).FindAndCount(s)
-}
-
-func (s *{{$classes}}) FindAll(pageno, pagesize int, filters ...base.FilterFunc) (total int64, err error) {
-	query := engine.NewSession()
-	for _, ft := range filters {
-		query = ft(query)
-	}
-	return base.Paginate(query, pageno, pagesize).FindAndCount(s)
-}
-`
-)
-
-func GetGolangTemplate(name string) *template.Template {
+func GetGolangTemplate(name string, funcs template.FuncMap) *template.Template {
 	var content string
 	switch strings.ToLower(name) {
 	default:
@@ -166,9 +168,5 @@ func GetGolangTemplate(name string) *template.Template {
 	if tmpl, ok := initTemplates[name]; ok {
 		return tmpl
 	}
-	t := template.New(name)
-	if tmpl, err := t.Parse(content); err == nil {
-		return tmpl
-	}
-	return nil
+	return NewTemplate(name, content, funcs)
 }

@@ -15,6 +15,15 @@ const (
 
 var cfg *Settings
 
+type IConnectSettings interface {
+	GetConnection(key string) ConnConfig
+}
+
+type IReverseSettings interface {
+	GetReverseTargets() []ReverseTarget
+	GetDataSources(names []string) []*DataSource
+}
+
 type Settings struct {
 	isEmpty        bool
 	Application    AppConfig             `json:"application" yaml:"application"`
@@ -27,17 +36,23 @@ type AppConfig struct {
 	PluralTable bool `json:"plural_table" yaml:"plural_table"`
 }
 
+type PartConfig struct {
+	TablePrefix   string   `json:"table_prefix" yaml:"table_prefix"`
+	IncludeTables []string `json:"include_tables" yaml:"include_tables"`
+	ExcludeTables []string `json:"exclude_tables" yaml:"exclude_tables"`
+}
+
 type ConnConfig struct {
-	DriverName  string `json:"driver_name" yaml:"driver_name"`
-	TablePrefix string `json:"table_prefix" yaml:"table_prefix"`
-	ReadOnly    string `json:"read_only" yaml:"read_only"`
-	Params      dialect.ConnParams
+	DriverName string `json:"driver_name" yaml:"driver_name"`
+	ReadOnly   string `json:"read_only" yaml:"read_only"`
+	Partition  PartConfig `json:"partition" yaml:"partition"`
+	Params     dialect.ConnParams
 }
 
 type DataSource struct {
-	ConnKey     string
-	TablePrefix string
-	Dialect     dialect.Dialect
+	ConnKey   string
+	Partition PartConfig
+	Dialect   dialect.Dialect
 	*ReverseSource
 }
 
@@ -72,7 +87,22 @@ func SaveSettings(file string) error {
 	return err
 }
 
-func (cfg *Settings) GetDataSources(names []string) (ds []*DataSource) {
+func (cfg Settings) GetApplication() AppConfig {
+	return cfg.Application
+}
+
+func (cfg Settings) GetConnection(key string) ConnConfig {
+	if c, ok := cfg.Connections[key]; ok {
+		return c
+	}
+	return ConnConfig{}
+}
+
+func (cfg Settings) GetReverseTargets() []ReverseTarget {
+	return cfg.ReverseTargets
+}
+
+func (cfg Settings) GetDataSources(names []string) (ds []*DataSource) {
 	if len(names) == 0 {
 		for name, c := range cfg.Connections {
 			ds = append(ds, NewDataSource(name, c))
@@ -80,18 +110,17 @@ func (cfg *Settings) GetDataSources(names []string) (ds []*DataSource) {
 		return
 	} else {
 		for _, name := range names {
-			c, ok := cfg.Connections[name]
-			if !ok {
-				continue
+			c := cfg.GetConnection(name)
+			if c.DriverName != "" {
+				ds = append(ds, NewDataSource(name, c))
 			}
-			ds = append(ds, NewDataSource(name, c))
 		}
 		return
 	}
 }
 
 func NewDataSource(k string, c ConnConfig) *DataSource {
-	d := &DataSource{ConnKey: k, TablePrefix: c.TablePrefix}
+	d := &DataSource{ConnKey: k, Partition: c.Partition}
 	d.Dialect = dialect.GetDialectByName(c.DriverName)
 	if d.Dialect != nil {
 		d.ReverseSource = &ReverseSource{

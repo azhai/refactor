@@ -132,16 +132,19 @@ func Reverse(source *config.DataSource, target *config.ReverseTarget) error {
 
 	var tmpl *template.Template
 	if isRedis {
-		tmpl = language.GetGolangTemplate("cache")
+		tmpl = language.GetGolangTemplate("cache", nil)
 	} else {
-		tmpl = language.GetGolangTemplate("conn")
+		tmpl = language.GetGolangTemplate("conn", nil)
 	}
 	buf := new(bytes.Buffer)
-	_ = tmpl.Execute(buf, map[string]interface{}{
+	data := map[string]interface{}{
 		"Target":    target,
 		"NameSpace": target.NameSpace,
 		"ConnKey":   source.ConnKey,
-	})
+	}
+	if err := tmpl.Execute(buf, data); err != nil {
+		return err
+	}
 	fileName := target.GetFileName(config.INIT_FILE_NAME)
 	_, err := formatter(fileName, buf.Bytes())
 	if err == nil {
@@ -198,21 +201,12 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 
 	var tableMapper = convertMapper(target.TableMapper)
 	var colMapper = convertMapper(target.ColumnMapper)
-
 	funcs["TableMapper"] = tableMapper.Table2Obj
 	funcs["ColumnMapper"] = colMapper.Table2Obj
-
 	if bs == nil {
 		return errors.New("You have to indicate template / template path or a language")
 	}
-
-	t := template.New("reverse")
-	t.Funcs(funcs)
-
-	tmpl, err := t.Parse(string(bs))
-	if err != nil {
-		return err
-	}
+	tmpl := language.NewTemplate("reverse", string(bs), funcs)
 
 	tables := make(map[string]*schemas.Table)
 	for _, table := range tableSchemas {
@@ -231,31 +225,53 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 		return err
 	}
 
+	tmplQuery := language.GetGolangTemplate("query", funcs)
 	buf := new(bytes.Buffer)
 	if !target.MultipleFiles {
 		packages := importter(tables)
-		if err = tmpl.Execute(buf, map[string]interface{}{
+		data := map[string]interface{}{
 			"Target":  target,
 			"Tables":  tables,
 			"Imports": packages,
-		}); err != nil {
+		}
+		if err = tmpl.Execute(buf, data); err != nil {
 			return err
 		}
 		fileName := target.GetFileName(config.SINGLE_FILE_NAME)
 		if _, err = formatter(fileName, buf.Bytes()); err != nil {
 			return err
 		}
+		if target.GenQueryMethods {
+			buf.Reset()
+			data["Imports"] = map[string]string{
+				"gitea.com/azhai/refactor/language/common": "base",
+			}
+			if err = tmplQuery.Execute(buf, data); err != nil {
+				return err
+			}
+			fileName := target.GetFileName(config.QUERY_FILE_NAME)
+			if _, err = formatter(fileName, buf.Bytes()); err != nil {
+				return err
+			}
+		}
 	} else {
 		for tableName, table := range tables {
 			tbs := map[string]*schemas.Table{tableName: table}
 			packages := importter(tbs)
-			buf.Reset()
-			if err = tmpl.Execute(buf, map[string]interface{}{
+			data := map[string]interface{}{
 				"Target":  target,
 				"Tables":  tbs,
 				"Imports": packages,
-			}); err != nil {
+			}
+			buf.Reset()
+			if err = tmpl.Execute(buf, data); err != nil {
 				return err
+			}
+			if target.GenQueryMethods {
+				data["Imports"] = []string{}
+				if err = tmplQuery.Execute(buf, data); err != nil {
+					return err
+				}
 			}
 			fileName := target.GetFileName(table.Name)
 			if _, err = formatter(fileName, buf.Bytes()); err != nil {

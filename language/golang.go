@@ -86,20 +86,16 @@ func genNameSpace(targetDir string) string {
 	return nameSpace
 }
 
-func genGoImports(tables map[string]*schemas.Table) []string {
+func genGoImports(tables map[string]*schemas.Table) map[string]string {
 	imports := make(map[string]string)
-	results := make([]string, 0)
 	for _, table := range tables {
 		for _, col := range table.Columns() {
 			if typestring(col) == "time.Time" {
-				if _, ok := imports["time"]; !ok {
-					imports["time"] = "time"
-					results = append(results, "time")
-				}
+				imports["time"] = ""
 			}
 		}
 	}
-	return results
+	return imports
 }
 
 func typestring(col *schemas.Column) string {

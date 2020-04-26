@@ -40,8 +40,8 @@ func ReverseAction(ctx *cli.Context) error {
 		if d.ReverseSource == nil {
 			continue
 		}
-		for _, target := range cfg.ReverseTargets {
-			target = target.MergeOptions(d.ConnKey, d.TablePrefix)
+		for _, target := range cfg.GetReverseTargets() {
+			target = target.MergeOptions(d.ConnKey, d.Partition)
 			if err := refactor.Reverse(d, &target); err != nil {
 				return err
 			}
