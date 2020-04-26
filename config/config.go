@@ -8,6 +8,11 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+const (
+	DEFAULT_FILE_MODE = 0644
+	DEFAULT_DIR_MODE  = 0755
+)
+
 var cfg *Settings
 
 type Settings struct {

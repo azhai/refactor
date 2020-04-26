@@ -112,16 +112,56 @@ func DelSession(token string) bool {
 	return sessreg.DelSession(token)
 }
 `
+
+	golangQueryTemplate = `package {{.Target.NameSpace}}
+
+import (
+	base "gitea.com/azhai/refactor/language/common"
+)
+
+{{$class := TableMapper $table.Name -}}
+{{$classes := DiffPluralize $class "Rows" -}}
+type {{$class}} []{{$class}}
+
+func (m *{{$class}}) One(where interface{}, args ...interface{}) (has bool, err error) {
+	query := engine.NewSession().Where(where, args)
+	return query.Get(&m)
+}
+
+func (m *{{$class}}) FindOne(filters ...base.FilterFunc) (has bool, err error) {
+	query := engine.NewSession()
+	for _, ft := range filters {
+		query = ft(query)
+	}
+	return query.Get(&m)
+}
+
+func (s *{{$classes}}) All(pageno, pagesize int, where interface{}, args ...interface{}) (total int64, err error) {
+	query := engine.NewSession().Where(where, args)
+	return base.Paginate(query, pageno, pagesize).FindAndCount(s)
+}
+
+func (s *{{$classes}}) FindAll(pageno, pagesize int, filters ...base.FilterFunc) (total int64, err error) {
+	query := engine.NewSession()
+	for _, ft := range filters {
+		query = ft(query)
+	}
+	return base.Paginate(query, pageno, pagesize).FindAndCount(s)
+}
+`
 )
 
 func GetGolangTemplate(name string) *template.Template {
 	var content string
-	if strings.Contains(name, "conn") || strings.Contains(name, "Conn") {
-		name, content = "conn", golangConnTemplate
-	} else if strings.Contains(name, "cache") || strings.Contains(name, "Cache") {
-		name, content = "cache", golangCacheTemplate
-	} else {
+	switch strings.ToLower(name) {
+	default:
 		name, content = "model", golangModelTemplate
+	case "cache":
+		name, content = "cache", golangCacheTemplate
+	case "conn":
+		name, content = "conn", golangConnTemplate
+	case "query":
+		name, content = "query", golangQueryTemplate
 	}
 	if tmpl, ok := initTemplates[name]; ok {
 		return tmpl

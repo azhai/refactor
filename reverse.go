@@ -15,6 +15,7 @@ import (
 	"gitea.com/azhai/refactor/config"
 	"gitea.com/azhai/refactor/language"
 	"gitea.com/azhai/refactor/rewrite"
+	"gitea.com/azhai/refactor/utils"
 	"github.com/gobwas/glob"
 	"github.com/grsmv/inflect"
 	"xorm.io/xorm"
@@ -26,15 +27,25 @@ var (
 	formatters   = map[string]language.Formatter{}
 	importters   = map[string]language.Importter{}
 	defaultFuncs = template.FuncMap{
-		"Lower":       strings.ToLower,
-		"Upper":       strings.ToUpper,
-		"Title":       strings.Title,
-		"Camelize":    inflect.Camelize,
-		"Underscore":  inflect.Underscore,
-		"Pluralize":   inflect.Pluralize,
-		"Singularize": inflect.Singularize,
+		"Lower":         strings.ToLower,
+		"Upper":         strings.ToUpper,
+		"Title":         strings.Title,
+		"Camelize":      inflect.Camelize,
+		"Underscore":    inflect.Underscore,
+		"Singularize":   inflect.Singularize,
+		"Pluralize":     inflect.Pluralize,
+		"DiffPluralize": DiffPluralize,
 	}
 )
+
+// 如果复数形式和单数相同，人为增加后缀
+func DiffPluralize(word, suffix string) string {
+	words := inflect.Pluralize(word)
+	if words == word {
+		words += suffix
+	}
+	return words
+}
 
 func filterTables(tables []*schemas.Table, target *config.ReverseTarget) []*schemas.Table {
 	var res = make([]*schemas.Table, 0, len(tables))
@@ -113,7 +124,10 @@ func Reverse(source *config.DataSource, target *config.ReverseTarget) error {
 	}
 	var _err error
 	if target.ApplyMixins {
-		_err = rewrite.ScanModelDir(target.OutputDir, true)
+		files, _ := utils.FindFiles(target.OutputDir, ".go")
+		for fileName := range files {
+			_err = rewrite.ParseAndMixinFile(fileName, true)
+		}
 	}
 
 	var tmpl *template.Template
@@ -128,7 +142,7 @@ func Reverse(source *config.DataSource, target *config.ReverseTarget) error {
 		"NameSpace": target.NameSpace,
 		"ConnKey":   source.ConnKey,
 	})
-	fileName := target.GetFileName("init")
+	fileName := target.GetFileName(config.INIT_FILE_NAME)
 	_, err := formatter(fileName, buf.Bytes())
 	if err == nil {
 		err = _err
@@ -227,7 +241,7 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 		}); err != nil {
 			return err
 		}
-		fileName := target.GetFileName("models")
+		fileName := target.GetFileName(config.SINGLE_FILE_NAME)
 		if _, err = formatter(fileName, buf.Bytes()); err != nil {
 			return err
 		}

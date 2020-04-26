@@ -7,8 +7,19 @@ package config
 import (
 	"os"
 	"path/filepath"
+)
 
-	"gitea.com/azhai/refactor/rewrite"
+const ( // 约定大于配置
+	INIT_FILE_NAME   = "init"
+	SINGLE_FILE_NAME = "tables"
+	QUERY_FILE_NAME  = "queries"
+
+	XORM_TAG_NAME        = "xorm"
+	XORM_TAG_NOT_NULL    = "notnull"
+	XORM_TAG_AUTO_INCR   = "autoincr"
+	XORM_TAG_PRIMARY_KEY = "pk"
+	XORM_TAG_UNIQUE      = "unique"
+	XORM_TAG_INDEX       = "index"
 )
 
 // ReverseConfig represents a reverse configuration
@@ -44,14 +55,15 @@ type ReverseTarget struct {
 	Importter string            `yaml:"importter"`
 	ExtName   string            `yaml:"ext_name"`
 
-	NameSpace    string `yaml:"name_space"`
-	GenJsonTag   bool   `yaml:"gen_json_tag"`
-	GenTableName bool   `yaml:"gen_table_name"`
-	ApplyMixins  bool   `yaml:"apply_mixins"`
+	NameSpace       string `yaml:"name_space"`
+	GenJsonTag      bool   `yaml:"gen_json_tag"`
+	GenTableName    bool   `yaml:"gen_table_name"`
+	GenQueryMethods bool   `yaml:"gen_query_methods"`
+	ApplyMixins     bool   `yaml:"apply_mixins"`
 }
 
 func (t ReverseTarget) GetFileName(name string) string {
-	_ = os.MkdirAll(t.OutputDir, rewrite.DEFAULT_DIR_MODE)
+	_ = os.MkdirAll(t.OutputDir, DEFAULT_DIR_MODE)
 	return filepath.Join(t.OutputDir, name+t.ExtName)
 }
 

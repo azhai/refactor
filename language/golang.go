@@ -13,6 +13,7 @@ import (
 	"sort"
 	"strings"
 
+	"gitea.com/azhai/refactor/config"
 	"gitea.com/azhai/refactor/rewrite"
 	"xorm.io/xorm/schemas"
 )
@@ -142,32 +143,31 @@ func tagXorm(table *schemas.Table, col *schemas.Column) string {
 	var res []string
 	if !col.Nullable {
 		if !isIdPk {
-			res = append(res, "not null")
+			res = append(res, config.XORM_TAG_NOT_NULL)
 		}
 	}
 	if col.IsPrimaryKey {
-		res = append(res, "pk")
+		res = append(res, config.XORM_TAG_PRIMARY_KEY)
 	}
 	if col.Default != "" {
 		res = append(res, "default "+col.Default)
 	}
 	if col.IsAutoIncrement {
-		res = append(res, "autoincr")
+		res = append(res, config.XORM_TAG_AUTO_INCR)
 	}
 
-	/*if col.SQLType.IsTime() && include(created, col.Name) {
-		res = append(res, "created")
+	if col.SQLType.IsTime() {
+		lowerName := strings.ToLower(col.Name)
+		if strings.HasPrefix(lowerName, "created") {
+			res = append(res, "created")
+		} else if strings.HasPrefix(lowerName, "updated") {
+			res = append(res, "updated")
+		} else if strings.HasPrefix(lowerName, "deleted") {
+			res = append(res, "deleted")
+		}
 	}
 
-	if col.SQLType.IsTime() && include(updated, col.Name) {
-		res = append(res, "updated")
-	}
-
-	if col.SQLType.IsTime() && include(deleted, col.Name) {
-		res = append(res, "deleted")
-	}*/
-
-	if /*supportComment &&*/ col.Comment != "" {
+	if col.Comment != "" {
 		res = append(res, fmt.Sprintf("comment('%s')", col.Comment))
 	}
 
@@ -181,9 +181,9 @@ func tagXorm(table *schemas.Table, col *schemas.Column) string {
 		index := table.Indexes[name]
 		var uistr string
 		if index.Type == schemas.UniqueType {
-			uistr = "unique"
+			uistr = config.XORM_TAG_UNIQUE
 		} else if index.Type == schemas.IndexType {
-			uistr = "index"
+			uistr = config.XORM_TAG_INDEX
 		}
 		if len(index.Cols) > 1 {
 			uistr += "(" + index.Name + ")"
@@ -231,16 +231,7 @@ func tagXorm(table *schemas.Table, col *schemas.Column) string {
 	}
 	res = append(res, nstr)
 	if len(res) > 0 {
-		return fmt.Sprintf(`xorm:"%s"`, strings.Join(res, " "))
+		return fmt.Sprintf(`%s:"%s"`, config.XORM_TAG_NAME, strings.Join(res, " "))
 	}
 	return ""
-}
-
-func include(source []string, target string) bool {
-	for _, s := range source {
-		if s == target {
-			return true
-		}
-	}
-	return false
 }

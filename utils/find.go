@@ -50,14 +50,12 @@ func InStringList(x string, lst []string, cmp int) bool {
 	return i < size && StringMatch(x, lst[i], cmp)
 }
 
-// 是否在字符串列表中，比较方式是有任何一个开头符合
-func StartStringList(x string, lst []string) bool {
-	return InStringList(x, lst, CMP_STRING_STARTSWITH)
-}
-
-// lst1 是 lst2 的子集
-func IsSubsetList(lst1, lst2 []string) bool {
+// lst1 是否 lst2 的（真）子集
+func IsSubsetList(lst1, lst2 []string, strict bool) bool {
 	if len(lst1) > len(lst2) {
+		return false
+	}
+	if strict && len(lst1) == len(lst2) {
 		return false
 	}
 	for _, x := range lst1 {
@@ -68,10 +66,7 @@ func IsSubsetList(lst1, lst2 []string) bool {
 	return true
 }
 
-// lst1 是 lst2 的真子集
-func IsStrictSubsetList(lst1, lst2 []string) bool {
-	if len(lst1) >= len(lst2) {
-		return false
-	}
-	return IsSubsetList(lst1, lst2)
+// 是否在字符串列表中，比较方式是有任何一个开头符合
+func StartStringList(x string, lst []string) bool {
+	return InStringList(x, lst, CMP_STRING_STARTSWITH)
 }

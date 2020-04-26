@@ -9,25 +9,12 @@ import (
  */
 type FilterFunc = func(query *xorm.Session) *xorm.Session
 
-func Where(query *xorm.Session, conds []interface{}) *xorm.Session {
-	if len(conds) >= 1 {
-		query = query.And(conds[0], conds[1:]...)
-	}
-	return query
-}
-
-func OrWhere(query *xorm.Session, conds []interface{}) *xorm.Session {
-	if len(conds) >= 1 {
-		query = query.Or(conds[0], conds[1:]...)
-	}
-	return query
-}
-
+// 计算翻页
 func Paginate(query *xorm.Session, pageno, pagesize int) *xorm.Session {
 	if pagesize < 0 {
 		return query
 	} else if pagesize == 0 {
-		return query.ID(0)
+		return query.Limit(0)
 	}
 	var offset int
 	if pageno > 0 {
@@ -35,8 +22,16 @@ func Paginate(query *xorm.Session, pageno, pagesize int) *xorm.Session {
 	} else if pageno < 0 {
 		total, err := query.Count()
 		if err == nil && total > 0 {
-			offset = pageno * pagesize + int(total)
+			offset = NegativeOffset(pageno * pagesize, pagesize, int(total))
 		}
 	}
 	return query.Limit(pagesize, offset)
+}
+
+// 调整从后往前翻页
+func NegativeOffset(offset, pagesize, total int) int {
+	if remain := total % pagesize; remain > 0 {
+		offset += pagesize - remain
+	}
+	return offset + total
 }

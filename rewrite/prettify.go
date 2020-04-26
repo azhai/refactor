@@ -4,13 +4,9 @@ import (
 	"go/format"
 	"io/ioutil"
 
+	"gitea.com/azhai/refactor/config"
 	"gitea.com/azhai/refactor/utils"
 	"golang.org/x/tools/imports"
-)
-
-const (
-	DEFAULT_FILE_MODE = 0644
-	DEFAULT_DIR_MODE  = 0755
 )
 
 // 格式化代码，如果出错返回原内容
@@ -23,7 +19,7 @@ func FormatGolangCode(src []byte) ([]byte, error) {
 }
 
 func WriteCodeFile(fileName string, sourceCode []byte) ([]byte, error) {
-	err := ioutil.WriteFile(fileName, sourceCode, DEFAULT_FILE_MODE)
+	err := ioutil.WriteFile(fileName, sourceCode, config.DEFAULT_FILE_MODE)
 	return sourceCode, err
 }
 

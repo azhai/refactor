@@ -47,7 +47,7 @@ type ITableComment interface {
  * 带自增主键的基础Model
  */
 type BaseModel struct {
-	Id uint `json:"id" xorm:"not null pk autoincr INT(10)"`
+	Id uint `json:"id" xorm:"notnull pk autoincr INT(10)"`
 }
 
 func (BaseModel) TableComment() string {
