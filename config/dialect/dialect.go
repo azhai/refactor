@@ -24,7 +24,7 @@ var dialects = map[string]Dialect{
 type Dialect interface {
 	Name() string
 	QuoteIdent(ident string) string
-	GetDSN(params ConnParams) string
+	ParseDSN(params ConnParams) string
 }
 
 func GetDialectByName(name string) Dialect {

@@ -22,13 +22,14 @@ const (
 
 func InitCache(cfg config.IConnectSettings, name string, verbose bool) (*SessionRegistry, error) {
 	var sessreg *SessionRegistry
-	c := cfg.GetConnection(name)
-	if c.DriverName != "redis" {
+	conns := cfg.GetConnections(name)
+	c, ok := conns[name]
+	if !ok || c.DriverName != "redis" {
 		return nil, nil
 	}
 	if verbose {
 		d := dialect.GetDialectByName(c.DriverName)
-		drv, dsn := d.Name(), d.GetDSN(c.Params)
+		drv, dsn := d.Name(), d.ParseDSN(c.Params)
 		args := d.(*dialect.Redis).Values.Encode()
 		pp.Println(drv, dsn, args)
 	}

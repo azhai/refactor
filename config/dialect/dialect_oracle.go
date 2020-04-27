@@ -13,7 +13,7 @@ func (Oracle) QuoteIdent(ident string) string {
 	return WrapWith(ident, "{", "}")
 }
 
-func (Oracle) GetDSN(params ConnParams) string {
+func (Oracle) ParseDSN(params ConnParams) string {
 	user := ConcatWith(params.Username, params.Password)
 	dsn := "oracle://"
 	if user != "" {

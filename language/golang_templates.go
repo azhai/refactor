@@ -28,23 +28,41 @@ func ({{$class}}) TableName() string {
 	return "{{$table_name}}"
 }
 {{end -}}
-{{end -}}
+{{end}}
 `, "`", "`")
 
 	golangQueryTemplate = `{{if not .Target.MultipleFiles}}package {{.Target.NameSpace}}
 
-{{$ilen := len .Imports}}{{if gt $ilen 0}}import (
+{{$ilen := len .Imports}}{{if gt $ilen 0 -}}
+import (
 	{{range $imp, $al := .Imports}}{{$al}} "{{$imp}}"{{end}}
-){{end}}{{end}}
+)
+{{end -}}{{end -}}
 
 {{range .Tables}}
 {{$class := TableMapper .Name -}}
+{{$pkey := GetSinglePKey . -}}
 
-func (m *{{$class}}) GetOne(where interface{}, args ...interface{}) (has bool, err error) {
+func (m *{{$class}}) Load(where interface{}, args ...interface{}) (bool, error) {
 	query := engine.NewSession().Where(where, args...)
 	return query.Get(m)
 }
+
+{{if ne $pkey "" -}}
+func (m *{{$class}}) Save(changes map[string]interface{}) error {
+	query := engine.Table(m)
+	if err := query.Begin(); err != nil {
+		return err
+	}
+	if changes == nil || m.{{$pkey}} == 0 {
+		query.Insert(m)
+	} else {
+		query.ID(m.{{$pkey}}).Update(changes)
+	}
+	return query.Commit()
+}
 {{end -}}
+{{end}}
 `
 
 	golangConnTemplate = `package {{.Target.NameSpace}}

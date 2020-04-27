@@ -35,19 +35,7 @@ func ReverseAction(ctx *cli.Context) error {
 	}
 
 	names := ctx.Args().Slice()
-	ds := cfg.GetDataSources(names)
-	for _, d := range ds {
-		if d.ReverseSource == nil {
-			continue
-		}
-		for _, target := range cfg.GetReverseTargets() {
-			target = target.MergeOptions(d.ConnKey, d.Partition)
-			if err := refactor.Reverse(d, &target); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
+	return refactor.ExecReverseSettings(cfg, names...)
 }
 
 func main() {

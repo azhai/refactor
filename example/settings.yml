@@ -7,9 +7,9 @@ mysql: &mysql  #共用数据库配置
    params:
       host: "127.0.0.1"
       port: 3306
-      username: "dba"
-      password: "pass"
-      database: "db_test"
+      username: "root"
+      password: ""
+      database: "test"
       options: { charset: "utf8mb4" }
 
 connections:
@@ -23,27 +23,27 @@ connections:
 
    default:  #默认数据库
       read_only: false
-      partition:
-         table_prefix: "t_"
-         exclude_tables:
-            - "busi_*"
-            - "stat_*"
+      table_prefix: "t_"
+      exclude_tables:
+         - "busi_*"
+         - "stat_*"
       <<: *mysql  #引用mysql配置
 
    business:  #业务数据库
       read_only: false
-      partition:
-         table_prefix: ""
-         include_tables:
-            - "busi_*"
-            - "stat_*"
+      table_prefix: ""
+      include_tables:
+         - "busi_*"
+         - "stat_*"
       <<: *mysql  #引用mysql配置
 
 reverse_targets:
    -  type: "codes"
       language: "golang"
       multiple_files: false
-      output_dir: "./models"
+      output_dir: "./example/models"
+      template_path: ""
+      query_template_path: ""
       gen_json_tag: true   # 生成JSON标签
       gen_table_name: true # 生成TableName()方法
       gen_query_methods: true # 生成查询方法

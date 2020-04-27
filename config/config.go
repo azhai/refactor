@@ -5,7 +5,9 @@ import (
 	"os"
 
 	"gitea.com/azhai/refactor/config/dialect"
+	"github.com/k0kubun/pp"
 	"gopkg.in/yaml.v2"
+	"xorm.io/xorm"
 )
 
 const (
@@ -13,19 +15,16 @@ const (
 	DEFAULT_DIR_MODE  = 0755
 )
 
-var cfg *Settings
-
 type IConnectSettings interface {
-	GetConnection(key string) ConnConfig
+	GetConnections(keys ...string) map[string]ConnConfig
 }
 
 type IReverseSettings interface {
 	GetReverseTargets() []ReverseTarget
-	GetDataSources(names []string) []*DataSource
+	IConnectSettings
 }
 
 type Settings struct {
-	isEmpty        bool
 	Application    AppConfig             `json:"application" yaml:"application"`
 	Connections    map[string]ConnConfig `json:"connections" yaml:"connections"`
 	ReverseTargets []ReverseTarget       `json:"reverse_targets" yaml:"reverse_targets"`
@@ -43,90 +42,74 @@ type PartConfig struct {
 }
 
 type ConnConfig struct {
-	DriverName string `json:"driver_name" yaml:"driver_name"`
-	ReadOnly   string `json:"read_only" yaml:"read_only"`
-	Partition  PartConfig `json:"partition" yaml:"partition"`
-	Params     dialect.ConnParams
+	DriverName string             `json:"driver_name" yaml:"driver_name"`
+	ReadOnly   bool               `json:"read_only" yaml:"read_only"`
+	Params     dialect.ConnParams `json:"params" yaml:"params"`
+	PartConfig `json:",inline" yaml:",inline"` // 注意逗号不能少
 }
 
 type DataSource struct {
-	ConnKey   string
-	Partition PartConfig
-	Dialect   dialect.Dialect
+	ConnKey string
+	Dialect dialect.Dialect
+	PartConfig
 	*ReverseSource
 }
 
-func GetSettings() *Settings {
-	if cfg == nil {
-		cfg = new(Settings)
-		cfg.isEmpty = true
-	}
-	return cfg
-}
-
-func ReadSettings(file string) (*Settings, error) {
-	cfg = new(Settings)
-	rd, err := os.Open(file)
+func ReadSettings(fileName string) (*Settings, error) {
+	cfg := new(Settings)
+	rd, err := os.Open(fileName)
 	if err == nil {
 		err = yaml.NewDecoder(rd).Decode(&cfg)
-		if err == nil {
-			cfg.isEmpty = false
-		}
 	}
 	return cfg, err
 }
 
-func SaveSettings(file string) error {
-	if cfg = GetSettings(); cfg.isEmpty {
-		return fmt.Errorf("the settings is not exists")
-	}
-	wt, err := os.Open(file)
+func SaveSettings(cfg interface{}, fileName string) error {
+	wt, err := os.Open(fileName)
 	if err == nil {
 		err = yaml.NewEncoder(wt).Encode(cfg)
 	}
 	return err
 }
 
-func (cfg Settings) GetApplication() AppConfig {
-	return cfg.Application
-}
-
-func (cfg Settings) GetConnection(key string) ConnConfig {
-	if c, ok := cfg.Connections[key]; ok {
-		return c
-	}
-	return ConnConfig{}
-}
-
 func (cfg Settings) GetReverseTargets() []ReverseTarget {
 	return cfg.ReverseTargets
 }
 
-func (cfg Settings) GetDataSources(names []string) (ds []*DataSource) {
-	if len(names) == 0 {
-		for name, c := range cfg.Connections {
-			ds = append(ds, NewDataSource(name, c))
-		}
-		return
-	} else {
-		for _, name := range names {
-			c := cfg.GetConnection(name)
-			if c.DriverName != "" {
-				ds = append(ds, NewDataSource(name, c))
-			}
-		}
-		return
+func (cfg Settings) GetConnections(keys ...string) map[string]ConnConfig {
+	if len(keys) == 0 {
+		return cfg.Connections
 	}
+	result := make(map[string]ConnConfig)
+	for _, k := range keys {
+		if c, ok := cfg.Connections[k]; ok {
+			result[k] = c
+		}
+	}
+	return result
 }
 
 func NewDataSource(k string, c ConnConfig) *DataSource {
-	d := &DataSource{ConnKey: k, Partition: c.Partition}
+	d := &DataSource{ConnKey: k, PartConfig: c.PartConfig}
 	d.Dialect = dialect.GetDialectByName(c.DriverName)
 	if d.Dialect != nil {
 		d.ReverseSource = &ReverseSource{
 			Database: d.Dialect.Name(),
-			ConnStr:  d.Dialect.GetDSN(c.Params),
+			ConnStr:  d.Dialect.ParseDSN(c.Params),
 		}
 	}
 	return d
+}
+
+func (ds *DataSource) Connect(verbose bool) (*xorm.Engine, error) {
+	if ds.Database == "" || ds.ConnStr == "" {
+		return nil, fmt.Errorf("the config of connection is empty")
+	} else if verbose {
+		pp.Println(ds.Database, ds.ConnStr)
+	}
+	engine, err := xorm.NewEngine(ds.Database, ds.ConnStr)
+	if err == nil {
+		engine.ShowSQL(verbose)
+	}
+	return engine, err
 }

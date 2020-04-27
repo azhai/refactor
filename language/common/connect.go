@@ -4,30 +4,16 @@ import (
 	"time"
 
 	"gitea.com/azhai/refactor/config"
-	"gitea.com/azhai/refactor/config/dialect"
-	"github.com/k0kubun/pp"
 	"xorm.io/xorm"
 )
 
 func InitConn(cfg config.IConnectSettings, name string, verbose bool) (*xorm.Engine, error) {
-	c := cfg.GetConnection(name)
-	if c.DriverName == "" || c.DriverName == "redis" {
+	conns := cfg.GetConnections(name)
+	if len(conns) == 0 {
 		return nil, nil
 	}
-	var drv, dsn string
-	if d := dialect.GetDialectByName(c.DriverName); d != nil {
-		drv, dsn = d.Name(), d.GetDSN(c.Params)
-	}
-	if drv == "" || dsn == "" {
-		return nil, nil
-	} else if verbose {
-		pp.Println(drv, dsn)
-	}
-	engine, err := xorm.NewEngine(drv, dsn)
-	if err == nil {
-		engine.ShowSQL(verbose)
-	}
-	return engine, err
+	ds := config.NewDataSource(name, conns[name])
+	return ds.Connect(verbose)
 }
 
 /**
@@ -48,7 +34,7 @@ func Paginate(query *xorm.Session, pageno, pagesize int) *xorm.Session {
 	} else if pageno < 0 {
 		total, err := query.Count()
 		if err == nil && total > 0 {
-			offset = NegativeOffset(pageno * pagesize, pagesize, int(total))
+			offset = NegativeOffset(pageno*pagesize, pagesize, int(total))
 		}
 	}
 	return query.Limit(pagesize, offset)

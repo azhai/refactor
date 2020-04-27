@@ -11,7 +11,7 @@ func (Sqlite) QuoteIdent(ident string) string {
 	return WrapWith(ident, "`", "`")
 }
 
-func (Sqlite) GetDSN(params ConnParams) string {
+func (Sqlite) ParseDSN(params ConnParams) string {
 	user := ConcatWith(params.Username, params.Password)
 	var dsn string
 	if user != "" {

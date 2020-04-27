@@ -35,6 +35,7 @@ var (
 		"Singularize":   inflect.Singularize,
 		"Pluralize":     inflect.Pluralize,
 		"DiffPluralize": DiffPluralize,
+		"GetSinglePKey": GetSinglePKey,
 	}
 )
 
@@ -45,6 +46,13 @@ func DiffPluralize(word, suffix string) string {
 		words += suffix
 	}
 	return words
+}
+
+func GetSinglePKey(table *schemas.Table) (pkey string) {
+	if cols := table.PKColumns(); len(cols) == 1 {
+		pkey = cols[0].FieldName
+	}
+	return
 }
 
 func filterTables(tables []*schemas.Table, target *config.ReverseTarget) []*schemas.Table {
@@ -175,19 +183,8 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 
 	// load template
 	var bs []byte
-	if target.Template != "" {
-		bs = []byte(target.Template)
-	} else if target.TemplatePath != "" {
-		bs, err = ioutil.ReadFile(target.TemplatePath)
-		if err != nil {
-			return err
-		}
-	}
-
 	if lang != nil {
-		if bs == nil {
-			bs = []byte(lang.Template)
-		}
+		bs = []byte(lang.Template)
 		for k, v := range lang.Funcs {
 			funcs[k] = v
 		}
@@ -203,10 +200,28 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 	var colMapper = convertMapper(target.ColumnMapper)
 	funcs["TableMapper"] = tableMapper.Table2Obj
 	funcs["ColumnMapper"] = colMapper.Table2Obj
-	if bs == nil {
-		return errors.New("You have to indicate template / template path or a language")
+
+	// 配置模板优先于语言模板
+	tmplQuery := language.GetGolangTemplate("query", funcs)
+	if target.QueryTemplatePath != "" {
+		qt, err := ioutil.ReadFile(target.QueryTemplatePath)
+		if err == nil || len(qt) > 0 {
+			tmplQuery = language.NewTemplate("custom-query", string(qt), funcs)
+		} else {
+			target.GenQueryMethods, tmplQuery = false, nil
+		}
 	}
-	tmpl := language.NewTemplate("reverse", string(bs), funcs)
+	if target.TemplatePath != "" {
+		bs, err = ioutil.ReadFile(target.TemplatePath)
+		if err != nil {
+			return err
+		}
+	}
+
+	if bs == nil {
+		return errors.New("you have to indicate template / template path or a language")
+	}
+	tmpl := language.NewTemplate("custom-model", string(bs), funcs)
 
 	tables := make(map[string]*schemas.Table)
 	for _, table := range tableSchemas {
@@ -225,7 +240,6 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 		return err
 	}
 
-	tmplQuery := language.GetGolangTemplate("query", funcs)
 	buf := new(bytes.Buffer)
 	if !target.MultipleFiles {
 		packages := importter(tables)
@@ -241,7 +255,7 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 		if _, err = formatter(fileName, buf.Bytes()); err != nil {
 			return err
 		}
-		if target.GenQueryMethods {
+		if target.GenQueryMethods && tmplQuery != nil {
 			buf.Reset()
 			data["Imports"] = map[string]string{}
 			//data["Imports"] = map[string]string{"gitea.com/azhai/refactor/language/common":"base"}
@@ -266,7 +280,7 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 			if err = tmpl.Execute(buf, data); err != nil {
 				return err
 			}
-			if target.GenQueryMethods {
+			if target.GenQueryMethods && tmplQuery != nil {
 				data["Imports"] = map[string]string{}
 				if err = tmplQuery.Execute(buf, data); err != nil {
 					return err
@@ -274,6 +288,23 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 			}
 			fileName := target.GetFileName(table.Name)
 			if _, err = formatter(fileName, buf.Bytes()); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func ExecReverseSettings(cfg config.IReverseSettings, names ...string) error {
+	conns := cfg.GetConnections(names...)
+	for key, conf := range conns {
+		d := config.NewDataSource(key, conf)
+		if d.ReverseSource == nil {
+			continue
+		}
+		for _, target := range cfg.GetReverseTargets() {
+			target = target.MergeOptions(d.ConnKey, d.PartConfig)
+			if err := Reverse(d, &target); err != nil {
 				return err
 			}
 		}

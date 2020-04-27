@@ -1,6 +1,7 @@
 package dialect
 
 import (
+	"fmt"
 	"net/url"
 	"strconv"
 
@@ -10,6 +11,7 @@ import (
 const REDIS_DEFAULT_PORT uint16 = 6379
 
 type Redis struct {
+	addr    string
 	options []redis.DialOption
 	Values  url.Values
 }
@@ -22,9 +24,9 @@ func (Redis) QuoteIdent(ident string) string {
 	return WrapWith(ident, "'", "'")
 }
 
-func (r *Redis) GetDSN(params ConnParams) string {
-	r.options, r.Values = make([]redis.DialOption, 0), url.Values{}
-	dsn := params.GetAddr("127.0.0.1", REDIS_DEFAULT_PORT)
+func (r *Redis) ParseDSN(params ConnParams) string {
+	r.Values = url.Values{}
+	r.addr = params.GetAddr("127.0.0.1", REDIS_DEFAULT_PORT)
 	if params.Password != "" {
 		r.options = append(r.options, redis.DialPassword(params.Password))
 		r.Values.Set("auth", params.Password)
@@ -33,10 +35,12 @@ func (r *Redis) GetDSN(params ConnParams) string {
 		r.options = append(r.options, redis.DialDatabase(dbno))
 		r.Values.Set("select", params.Database)
 	}
-	return dsn
+	return r.addr
 }
 
-func (r *Redis) Connect(params ConnParams) (redis.Conn, error) {
-	dsn := r.GetDSN(params)
-	return redis.Dial("tcp", dsn, r.options...)
+func (r *Redis) Connect() (redis.Conn, error) {
+	if r.addr == "" {
+		return nil, fmt.Errorf("the address of redis server is empty")
+	}
+	return redis.Dial("tcp", r.addr, r.options...)
 }

@@ -18,7 +18,7 @@ func (Mysql) QuoteIdent(ident string) string {
 	return WrapWith(ident, "`", "`")
 }
 
-func (Mysql) GetDSN(params ConnParams) string {
+func (Mysql) ParseDSN(params ConnParams) string {
 	user := ConcatWith(params.Username, params.Password)
 	addr := params.GetAddr("127.0.0.1", MYSQL_DEFAULT_PORT)
 	dsn := user + "@"

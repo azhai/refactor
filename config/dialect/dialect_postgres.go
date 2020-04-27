@@ -13,7 +13,7 @@ func (Postgres) QuoteIdent(ident string) string {
 	return WrapWith(ident, `"`, `"`)
 }
 
-func (Postgres) GetDSN(params ConnParams) string {
+func (Postgres) ParseDSN(params ConnParams) string {
 	dsn := "user=" + params.Username
 	if params.Password != "" {
 		dsn += " password=" + params.Password

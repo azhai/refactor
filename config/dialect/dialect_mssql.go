@@ -13,7 +13,7 @@ func (Mssql) QuoteIdent(ident string) string {
 	return WrapWith(ident, "[", "]")
 }
 
-func (Mssql) GetDSN(params ConnParams) string {
+func (Mssql) ParseDSN(params ConnParams) string {
 	dsn := "sqlserver://"
 	user := ConcatWith(params.Username, params.Password)
 	if user != "" {

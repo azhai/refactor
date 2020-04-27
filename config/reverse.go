@@ -11,7 +11,7 @@ import (
 
 const ( // 约定大于配置
 	INIT_FILE_NAME   = "init"
-	SINGLE_FILE_NAME = "tables"
+	SINGLE_FILE_NAME = "models"
 	QUERY_FILE_NAME  = "queries"
 
 	XORM_TAG_NAME        = "xorm"
@@ -38,17 +38,17 @@ type ReverseSource struct {
 
 // ReverseTarget represents a reverse target
 type ReverseTarget struct {
-	Type          string   `yaml:"type"`
-	IncludeTables []string `yaml:"include_tables"`
-	ExcludeTables []string `yaml:"exclude_tables"`
-	TableMapper   string   `yaml:"table_mapper"`
-	ColumnMapper  string   `yaml:"column_mapper"`
-	TemplatePath  string   `yaml:"template_path"`
-	Template      string   `yaml:"template"`
-	MultipleFiles bool     `yaml:"multiple_files"`
-	OutputDir     string   `yaml:"output_dir"`
-	TablePrefix   string   `yaml:"table_prefix"`
-	Language      string   `yaml:"language"`
+	Type              string   `yaml:"type"`
+	IncludeTables     []string `yaml:"include_tables"`
+	ExcludeTables     []string `yaml:"exclude_tables"`
+	TableMapper       string   `yaml:"table_mapper"`
+	ColumnMapper      string   `yaml:"column_mapper"`
+	TemplatePath      string   `yaml:"template_path"`
+	QueryTemplatePath string   `yaml:"query_template_path"`
+	MultipleFiles     bool     `yaml:"multiple_files"`
+	OutputDir         string   `yaml:"output_dir"`
+	TablePrefix       string   `yaml:"table_prefix"`
+	Language          string   `yaml:"language"`
 
 	Funcs     map[string]string `yaml:"funcs"`
 	Formatter string            `yaml:"formatter"`
