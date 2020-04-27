@@ -40,32 +40,9 @@ func ({{$class}}) TableName() string {
 {{range .Tables}}
 {{$class := TableMapper .Name -}}
 
-func (m *{{$class}}) One(where interface{}, args ...interface{}) (has bool, err error) {
-	query := engine.NewSession().Where(where, args)
+func (m *{{$class}}) GetOne(where interface{}, args ...interface{}) (has bool, err error) {
+	query := engine.NewSession().Where(where, args...)
 	return query.Get(m)
-}
-
-func (m *{{$class}}) FindOne(filters ...base.FilterFunc) (has bool, err error) {
-	query := engine.NewSession()
-	for _, ft := range filters {
-		query = ft(query)
-	}
-	return query.Get(m)
-}
-
-type {{$class}}Objs []{{$class}}
-
-func (s *{{$class}}Objs) All(pageno, pagesize int, where interface{}, args ...interface{}) (total int64, err error) {
-	query := engine.NewSession().Where(where, args)
-	return base.Paginate(query, pageno, pagesize).FindAndCount(s)
-}
-
-func (s *{{$class}}Objs) FindAll(pageno, pagesize int, filters ...base.FilterFunc) (total int64, err error) {
-	query := engine.NewSession()
-	for _, ft := range filters {
-		query = ft(query)
-	}
-	return base.Paginate(query, pageno, pagesize).FindAndCount(s)
 }
 {{end -}}
 `
@@ -106,6 +83,22 @@ func Table(name interface{}) *xorm.Session {
 		return nil
 	}
 	return engine.Table(name)
+}
+
+// 查询多行数据
+func QueryAll(filter base.FilterFunc, pages ...int) *xorm.Session {
+	query := engine.NewSession()
+	if filter != nil {
+		query = filter(query)
+	}
+	pageno, pagesize := 0, -1
+	if len(pages) >= 1 {
+		pageno = pages[0]
+		if len(pages) >= 2 {
+			pagesize = pages[1]
+		}
+	}
+	return base.Paginate(query, pageno, pagesize)
 }
 `
 

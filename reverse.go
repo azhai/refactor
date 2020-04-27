@@ -243,9 +243,8 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 		}
 		if target.GenQueryMethods {
 			buf.Reset()
-			data["Imports"] = map[string]string{
-				"gitea.com/azhai/refactor/language/common": "base",
-			}
+			data["Imports"] = map[string]string{}
+			//data["Imports"] = map[string]string{"gitea.com/azhai/refactor/language/common":"base"}
 			if err = tmplQuery.Execute(buf, data); err != nil {
 				return err
 			}
@@ -268,7 +267,7 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 				return err
 			}
 			if target.GenQueryMethods {
-				data["Imports"] = []string{}
+				data["Imports"] = map[string]string{}
 				if err = tmplQuery.Execute(buf, data); err != nil {
 					return err
 				}
