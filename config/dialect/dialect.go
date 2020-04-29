@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"strings"
 
-	"gitea.com/azhai/refactor/utils"
+	utils "github.com/azhai/gozzo-utils/common"
 )
 
 var (
@@ -19,6 +19,7 @@ var dialects = map[string]Dialect{
 	"postgres": &Postgres{},
 	"redis":    &Redis{},
 	"sqlite":   &Sqlite{},
+	"sqlite3":  &Sqlite3{},
 }
 
 type Dialect interface {

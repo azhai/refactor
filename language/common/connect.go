@@ -16,10 +16,11 @@ func InitConn(cfg config.IConnectSettings, name string, verbose bool) (*xorm.Eng
 	return ds.Connect(verbose)
 }
 
-/**
- * 过滤查询
- */
+// 过滤查询
 type FilterFunc = func(query *xorm.Session) *xorm.Session
+
+// 修改操作，用于事务
+type ModifyFunc = func(tx *xorm.Session) (int64, error)
 
 // 计算翻页
 func Paginate(query *xorm.Session, pageno, pagesize int) *xorm.Session {
@@ -63,21 +64,11 @@ type ITableComment interface {
 }
 
 /**
- * 带自增主键的基础Model
- */
-type BaseModel struct {
-	Id uint `json:"id" xorm:"notnull pk autoincr INT(10)"`
-}
-
-func (BaseModel) TableComment() string {
-	return ""
-}
-
-/**
  * 时间相关的三个典型字段
  */
-type TimeModel struct {
+type TimeMixin struct {
 	CreatedAt time.Time `json:"created_at" xorm:"created comment('创建时间') TIMESTAMP"`       // 创建时间
 	UpdatedAt time.Time `json:"updated_at" xorm:"updated comment('更新时间') TIMESTAMP"`       // 更新时间
 	DeletedAt time.Time `json:"deleted_at" xorm:"deleted comment('删除时间') index TIMESTAMP"` // 删除时间
 }
+

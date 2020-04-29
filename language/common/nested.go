@@ -6,27 +6,27 @@ import (
 )
 
 // 嵌套集合树
-type NestedModel struct {
+type NestedMixin struct {
 	Lft   int `json:"lft" xorm:"notnull default 0 comment('左边界') INT(10)"`           // 左边界
 	Rgt   int `json:"rgt" xorm:"notnull default 0 comment('右边界') index INT(10)"`     // 右边界
 	Depth int `json:"depth" xorm:"notnull default 1 comment('高度') index TINYINT(3)"` // 高度
 }
 
 // 是否叶子节点
-func (n NestedModel) IsLeaf() bool {
-	return n.Rgt-n.Lft == 1
+func (n NestedMixin) IsLeaf() bool {
+	return n.Rgt - n.Lft == 1
 }
 
 // 有多少个子孙节点
-func (n NestedModel) CountChildren() int {
-	return int(n.Rgt-n.Lft-1) / 2
+func (n NestedMixin) CountChildren() int {
+	return (n.Rgt - n.Lft - 1) / 2
 }
 
 // 找出所有直系祖先节点
-func (n NestedModel) AncestorsFilter(Backward bool) FilterFunc {
+func (n NestedMixin) AncestorsFilter(backward bool) FilterFunc {
 	return func(query *xorm.Session) *xorm.Session {
 		query = query.Where("rgt > ? AND lft < ?", n.Rgt, n.Lft)
-		if Backward { // 从子孙往祖先方向排序，即时间倒序
+		if backward { // 从子孙往祖先方向排序，即时间倒序
 			return query.OrderBy("rgt ASC")
 		} else {
 			return query.OrderBy("rgt DESC")
@@ -35,7 +35,7 @@ func (n NestedModel) AncestorsFilter(Backward bool) FilterFunc {
 }
 
 // 找出所有子孙节点
-func (n NestedModel) ChildrenFilter(rank uint8) FilterFunc {
+func (n NestedMixin) ChildrenFilter(rank uint8) FilterFunc {
 	return func(query *xorm.Session) *xorm.Session {
 		if n.Rgt > 0 && n.Lft > 0 { // 当前不是第0层，即具体某分支以下的节点
 			query = query.Where("rgt < ? AND lft > ?", n.Rgt, n.Lft)
@@ -52,7 +52,7 @@ func (n NestedModel) ChildrenFilter(rank uint8) FilterFunc {
 }
 
 // 添加到父节点最末，tbQuery一定要使用db.Table(...)
-func (n *NestedModel) AddToParent(parent *NestedModel, tbQuery *xorm.Session) error {
+func (n *NestedMixin) AddToParent(parent *NestedMixin, tbQuery *xorm.Session) error {
 	var query = tbQuery.OrderBy("rgt DESC")
 	if parent == nil {
 		n.Depth = 1
@@ -61,7 +61,7 @@ func (n *NestedModel) AddToParent(parent *NestedModel, tbQuery *xorm.Session) er
 		query = query.Where("rgt < ? AND lft > ?", parent.Rgt, parent.Lft)
 	}
 	query = query.Where("depth = ?", n.Depth)
-	sibling := new(NestedModel)
+	sibling := new(NestedMixin)
 	has, err := query.Get(&sibling)
 	if has == false || err != nil {
 		return err

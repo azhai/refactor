@@ -60,6 +60,8 @@ type ReverseTarget struct {
 	GenTableName    bool   `yaml:"gen_table_name"`
 	GenQueryMethods bool   `yaml:"gen_query_methods"`
 	ApplyMixins     bool   `yaml:"apply_mixins"`
+	MixinDirPath    string `yaml:"mixin_dir_path"`
+	MixinNameSpace  string `yaml:"mixin_name_space"`
 }
 
 func (t ReverseTarget) GetFileName(name string) string {

@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 
 	"gitea.com/azhai/refactor/config"
-	"gitea.com/azhai/refactor/utils"
+	"github.com/azhai/gozzo-utils/filesystem"
 	"golang.org/x/tools/imports"
 )
 
@@ -46,7 +46,7 @@ func RewritePackage(pkgpath, pkgname string) error {
 	if pkgname != "" {
 		// TODO: 替换包名
 	}
-	files, err := utils.FindFiles(pkgpath, ".go")
+	files, err := filesystem.FindFiles(pkgpath, ".go")
 	if err != nil {
 		return err
 	}

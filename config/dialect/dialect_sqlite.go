@@ -20,3 +20,11 @@ func (Sqlite) ParseDSN(params ConnParams) string {
 	dsn += params.Database + "?cache=shared&mode=rwc"
 	return dsn
 }
+
+type Sqlite3 struct {
+	Sqlite
+}
+
+func (Sqlite3) Name() string {
+	return "sqlite3"
+}

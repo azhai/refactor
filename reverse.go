@@ -15,7 +15,7 @@ import (
 	"gitea.com/azhai/refactor/config"
 	"gitea.com/azhai/refactor/language"
 	"gitea.com/azhai/refactor/rewrite"
-	"gitea.com/azhai/refactor/utils"
+	"github.com/azhai/gozzo-utils/filesystem"
 	"github.com/gobwas/glob"
 	"github.com/grsmv/inflect"
 	"xorm.io/xorm"
@@ -130,13 +130,6 @@ func Reverse(source *config.DataSource, target *config.ReverseTarget) error {
 	if target.Language != "golang" {
 		return nil
 	}
-	var _err error
-	if target.ApplyMixins {
-		files, _ := utils.FindFiles(target.OutputDir, ".go")
-		for fileName := range files {
-			_err = rewrite.ParseAndMixinFile(fileName, true)
-		}
-	}
 
 	var tmpl *template.Template
 	if isRedis {
@@ -155,8 +148,26 @@ func Reverse(source *config.DataSource, target *config.ReverseTarget) error {
 	}
 	fileName := target.GetFileName(config.INIT_FILE_NAME)
 	_, err := formatter(fileName, buf.Bytes())
-	if err == nil {
-		err = _err
+
+	if target.ApplyMixins {
+		files, _ := filesystem.FindFiles("./language/common/", ".go")
+		baseImport := "gitea.com/azhai/refactor/language/common"
+		for fileName := range files {
+			_ = rewrite.AddFormerMixins(fileName, baseImport, "base")
+		}
+		if target.MixinDirPath != "" {
+			files, _ := filesystem.FindFiles(target.MixinDirPath, ".go")
+			for fileName := range files {
+				_ = rewrite.AddFormerMixins(fileName, target.MixinNameSpace, "")
+			}
+		}
+		files, _ = filesystem.FindFiles(target.OutputDir, ".go")
+		for fileName := range files {
+			_err := rewrite.ParseAndMixinFile(fileName, true)
+			if _err != nil {
+				err = _err
+			}
+		}
 	}
 	return err
 }
@@ -223,6 +234,7 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 	}
 	tmpl := language.NewTemplate("custom-model", string(bs), funcs)
 
+	queryImports := make(map[string]string)
 	tables := make(map[string]*schemas.Table)
 	for _, table := range tableSchemas {
 		tableName := table.Name
@@ -233,6 +245,11 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 			col.FieldName = colMapper.Table2Obj(col.Name)
 		}
 		tables[tableName] = table
+		pkey := GetSinglePKey(table)
+		if pkey != "" && pkey != "Id" {
+			queryImports["xorm.io/xorm"] = ""
+			// queryImports["gitea.com/azhai/refactor/language/common"] = "base"
+		}
 	}
 
 	err = os.MkdirAll(target.OutputDir, os.ModePerm)
@@ -257,8 +274,7 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 		}
 		if target.GenQueryMethods && tmplQuery != nil {
 			buf.Reset()
-			data["Imports"] = map[string]string{}
-			//data["Imports"] = map[string]string{"gitea.com/azhai/refactor/language/common":"base"}
+			data["Imports"] = queryImports
 			if err = tmplQuery.Execute(buf, data); err != nil {
 				return err
 			}
@@ -281,7 +297,7 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 				return err
 			}
 			if target.GenQueryMethods && tmplQuery != nil {
-				data["Imports"] = map[string]string{}
+				data["Imports"] = queryImports
 				if err = tmplQuery.Execute(buf, data); err != nil {
 					return err
 				}

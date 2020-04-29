@@ -42,30 +42,27 @@ import (
 {{range .Tables}}
 {{$class := TableMapper .Name -}}
 {{$pkey := GetSinglePKey . -}}
-
 func (m *{{$class}}) Load(where interface{}, args ...interface{}) (bool, error) {
-	query := engine.NewSession().Where(where, args...)
-	return query.Get(m)
+	return engine.NewSession().Where(where, args...).Get(m)
 }
 
-{{if ne $pkey "" -}}
+{{if eq $pkey "" -}}
+{{else if eq $pkey "Id" -}}
+{{else -}}
 func (m *{{$class}}) Save(changes map[string]interface{}) error {
-	query := engine.Table(m)
-	if err := query.Begin(); err != nil {
-		return err
-	}
-	if changes == nil || m.{{$pkey}} == 0 {
-		query.Insert(m)
-	} else {
-		query.ID(m.{{$pkey}}).Update(changes)
-	}
-	return query.Commit()
+	return ExecTx(func(tx *xorm.Session) (int64, error) {
+		if changes == nil || m.{{$pkey}} == 0 {
+			return tx.Insert(m)
+		} else {
+			return tx.Table(m).ID(m.{{$pkey}}).Update(changes)
+		}
+	})
 }
 {{end -}}
-{{end}}
+{{end -}}
 `
 
-	golangConnTemplate = `package {{.Target.NameSpace}}
+	golangConnTemplate = fmt.Sprintf(`package {{.Target.NameSpace}}
 
 import (
 	"gitea.com/azhai/refactor/config"
@@ -103,6 +100,21 @@ func Table(name interface{}) *xorm.Session {
 	return engine.Table(name)
 }
 
+// 带自增主键的基础Model
+type BaseMixin struct {
+	Id int %sjson:"id" xorm:"notnull pk autoincr INT(10)"%s
+}
+
+func (m *BaseMixin) Save(changes map[string]interface{}) error {
+	return ExecTx(func(tx *xorm.Session) (int64, error) {
+		if changes == nil || m.Id == 0 {
+			return tx.Insert(m)
+		} else {
+			return tx.Table(m).ID(m.Id).Update(changes)
+		}
+	})
+}
+
 // 查询多行数据
 func QueryAll(filter base.FilterFunc, pages ...int) *xorm.Session {
 	query := engine.NewSession()
@@ -118,7 +130,19 @@ func QueryAll(filter base.FilterFunc, pages ...int) *xorm.Session {
 	}
 	return base.Paginate(query, pageno, pagesize)
 }
-`
+
+// 执行事务
+func ExecTx(modify base.ModifyFunc) error {
+	tx := engine.NewSession() // 必须是新的session
+	defer tx.Close()
+	_ = tx.Begin()
+	if _, err := modify(tx); err != nil {
+		_ = tx.Rollback() // 失败回滚
+		return err
+	}
+	return tx.Commit()
+}
+`, "`", "`")
 
 	golangCacheTemplate = `package {{.Target.NameSpace}}
 

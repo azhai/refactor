@@ -6,6 +6,7 @@ import (
 
 	"gitea.com/azhai/refactor/config"
 	"gitea.com/azhai/refactor/config/dialect"
+	utils "github.com/azhai/gozzo-utils/common"
 	"github.com/azhai/gozzo-utils/redisw"
 	"github.com/gomodule/redigo/redis"
 	"github.com/k0kubun/pp"
@@ -27,13 +28,15 @@ func InitCache(cfg config.IConnectSettings, name string, verbose bool) (*Session
 	if !ok || c.DriverName != "redis" {
 		return nil, nil
 	}
+	d := dialect.GetDialectByName(c.DriverName).(*dialect.Redis)
+	drv, dsn := d.Name(), d.ParseDSN(c.Params)
 	if verbose {
-		d := dialect.GetDialectByName(c.DriverName)
-		drv, dsn := d.Name(), d.ParseDSN(c.Params)
-		args := d.(*dialect.Redis).Values.Encode()
-		pp.Println(drv, dsn, args)
+		pp.Println(drv, dsn, d.Values.Encode())
 	}
-	sessreg = NewRegistry(redisw.ConnParams(c.Params))
+	dial := func() (redis.Conn, error) {
+		return d.Connect()
+	}
+	sessreg = NewRegistry(redisw.NewRedisPool(dial, -1))
 	return sessreg, nil
 }
 
@@ -51,12 +54,11 @@ type SessionRegistry struct {
 	*redisw.RedisWrapper
 }
 
-func NewRegistry(params redisw.ConnParams) *SessionRegistry {
-	r := redisw.NewRedisPool(params, -1)
+func NewRegistry(w *redisw.RedisWrapper) *SessionRegistry {
 	return &SessionRegistry{
 		sessions:     make(map[string]*Session),
-		Onlines:      redisw.NewRedisHash(r, SESS_ONLINE_KEY, MAX_TIMEOUT),
-		RedisWrapper: r,
+		Onlines:      redisw.NewRedisHash(w, SESS_ONLINE_KEY, MAX_TIMEOUT),
+		RedisWrapper: w,
 	}
 }
 
@@ -108,7 +110,7 @@ func (sess *Session) GetKey() string {
 
 func (sess *Session) AddFlash(messages ...string) (int, error) {
 	key := fmt.Sprintf("flash:%s", sess.GetKey())
-	args := append([]interface{}{key}, redisw.StrToList(messages)...)
+	args := append([]interface{}{key}, utils.StrToList(messages)...)
 	return redis.Int(sess.Exec("RPUSH", args...))
 }
 

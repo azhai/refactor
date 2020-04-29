@@ -25,23 +25,17 @@ connections:
       read_only: false
       table_prefix: "t_"
       exclude_tables:
-         - "busi_*"
-         - "stat_*"
-      <<: *mysql  #引用mysql配置
-
-   business:  #业务数据库
-      read_only: false
-      table_prefix: ""
-      include_tables:
-         - "busi_*"
-         - "stat_*"
-      <<: *mysql  #引用mysql配置
+         - "a"
+         - "b"
+         - "c"
+         - "d"
+      <<: *mysql  #引用sqlite配置
 
 reverse_targets:
    -  type: "codes"
       language: "golang"
       multiple_files: false
-      output_dir: "./example/models"
+      output_dir: "./testdata/models"
       template_path: ""
       query_template_path: ""
       gen_json_tag: true   # 生成JSON标签

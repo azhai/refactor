@@ -10,10 +10,11 @@
 go get gitea.com/azhai/refactor
 ```
 
-## 使用
+## 编译使用
 
 ```
-reverse -f settings.yml
+make all
+./reverse -f testdata/settings.yml
 ```
 
 ## 配置文件
@@ -25,7 +26,7 @@ application:
    debug: true
    plural_table: false  #表名是否使用复数
 
-mysql: &mysql  #共用数据库配置
+mysql: &mysql           #共用数据库配置
    driver_name: "mysql"
    params:
       host: "127.0.0.1"
@@ -50,23 +51,25 @@ connections:
    default:
       read_only: false
       table_prefix: "t_" # 表前缀
-      include_tables: # 包含的表，以下可以用
+      include_tables:    # 包含的表，以下可以用
          - "a*"
          - "b*"
-      exclude_tables: # 排除的表，以下可以用
+      exclude_tables:    # 排除的表，以下可以用
          - "c"
-      <<: *mysql  #引用mysql配置
+      <<: *mysql         #引用mysql配置
 
 reverse_targets:
    -  type: codes
-      table_mapper: snake # 表名到代码类或结构体的映射关系
-      column_mapper: snake # 字段名到代码或结构体成员的映射关系
-      output_dir: "./models" # 代码生成目录
-      multiple_files: false # 是否生成多个文件
-      gen_json_tag: true   # 生成JSON标签
-      gen_table_name: true # 生成TableName()方法
-      gen_query_methods: true # 生成查询方法
-      apply_mixins: true   # 使用已知的Mixin替换部分字段
+      table_mapper: snake     # 表名到代码类或结构体的映射关系
+      column_mapper: snake    # 字段名到代码或结构体成员的映射关系
+      output_dir: "./models"  # 代码生成目录
+      multiple_files: false   # 是否生成多个文件
       template_path: "./template/goxorm.tmpl" # 生成的模板的路径，优先级比 language 中的默认模板高
       query_template_path: "" # 自定义查询方法模板
+      gen_json_tag: true      # 生成JSON标签
+      gen_table_name: true    # 生成TableName()方法
+      gen_query_methods: true # 生成查询方法
+      apply_mixins: true      # 使用已知的Mixin替换部分字段
+      mixin_dir_path: ""      # 额外的mixin目录
+      mixin_name_space: ""    # 额外的mixin包名
 ```

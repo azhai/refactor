@@ -7,33 +7,12 @@ import (
 	"sort"
 	"strings"
 
-	"gitea.com/azhai/refactor/utils"
+	utils "github.com/azhai/gozzo-utils/common"
 )
 
 const MODEL_EXTENDS = "`xorm:\"extends\"`"
 
-var substituteModels = map[string]*ModelSummary{
-	"base.TimeModel": {
-		Name:   "base.TimeModel",
-		Import: "gitea.com/azhai/refactor/language/common",
-		Alias:  "base",
-		FieldLines: []string{
-			"CreatedAt time.Time `json:\"created_at\" xorm:\"created comment('创建时间') TIMESTAMP\"`       // 创建时间",
-			"UpdatedAt time.Time `json:\"updated_at\" xorm:\"updated comment('更新时间') TIMESTAMP\"`       // 更新时间",
-			"DeletedAt time.Time `json:\"deleted_at\" xorm:\"deleted comment('删除时间') index TIMESTAMP\"` // 删除时间",
-		},
-	},
-	"base.NestedModel": {
-		Name:   "base.NestedModel",
-		Import: "gitea.com/azhai/refactor/language/common",
-		Alias:  "base",
-		FieldLines: []string{
-			"Lft   int `json:\"lft\" xorm:\"notnull default 0 comment('左边界') INT(10)\"`           // 左边界",
-			"Rgt   int `json:\"rgt\" xorm:\"notnull default 0 comment('右边界') index INT(10)\"`     // 右边界",
-			"Depth int `json:\"depth\" xorm:\"notnull default 1 comment('高度') index TINYINT(3)\"` // 高度",
-		},
-	},
-}
+var substituteModels = make(map[string]*ModelSummary)
 
 func RegisterSubstitute(sub *ModelSummary) {
 	if sub != nil {
@@ -49,10 +28,6 @@ type ModelSummary struct {
 	sortedFeatures []string
 	FieldLines     []string
 	IsChanged      bool
-}
-
-func NewModelSummary(name string) *ModelSummary {
-	return &ModelSummary{Name: name}
 }
 
 // 找出 model 内部代码，即在 {} 里面的内容
@@ -149,6 +124,32 @@ func ReplaceSummary(summary, sub *ModelSummary) *ModelSummary {
 	return summary
 }
 
+func AddFormerMixins(fileName, nameSpace, alias string) []string {
+	cp, err := NewFileParser(fileName)
+	if err != nil {
+		return nil
+	}
+	var mixinNames []string
+	for _, node := range cp.AllDeclNode("type") {
+		if len(node.Fields) == 0 {
+			continue
+		}
+		name := node.GetName()
+		if !strings.HasSuffix(name, "Mixin") {
+			continue
+		}
+		summary := &ModelSummary{Import: nameSpace, Alias: alias}
+		if alias == "" {
+			alias = cp.GetPackage()
+		}
+		summary.Name = fmt.Sprintf("%s.%s", alias, name)
+		_ = summary.ParseFields(cp, node)
+		RegisterSubstitute(summary)
+		mixinNames = append(mixinNames, summary.Name)
+	}
+	return mixinNames
+}
+
 func ParseAndMixinFile(fileName string, verbose bool) error {
 	cp, err := NewFileParser(fileName)
 	if err != nil {
@@ -168,7 +169,7 @@ func ParseAndMixinFile(fileName string, verbose bool) error {
 		//	continue // 避免重复处理 model
 		//}
 
-		summary := NewModelSummary(name)
+		summary := &ModelSummary{Name: name}
 		_ = summary.ParseFields(cp, node)
 		for n, sub := range substituteModels {
 			if n == summary.Name {
@@ -179,7 +180,9 @@ func ParseAndMixinFile(fileName string, verbose bool) error {
 			// 函数 IsSubsetList(..., ..., true) 用于排除异名同构的Model
 			if utils.IsSubsetList(sted, sorted, true) { // 正向替换
 				summary = ReplaceSummary(summary, sub)
-				imports[sub.Import] = sub.Alias
+				if sub.Import != "" {
+					imports[sub.Import] = sub.Alias
+				}
 				if verbose {
 					fmt.Println(summary.Name, " <- ", sub.Name)
 				}
