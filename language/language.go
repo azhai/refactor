@@ -59,12 +59,3 @@ func (l *Language) FixTarget(target *config.ReverseTarget) {
 	}
 }
 
-func NewTemplate(name, content string, funcs template.FuncMap) *template.Template {
-	t := template.New(name).Funcs(funcs)
-	tmpl, err := t.Parse(content)
-	if err != nil {
-		panic(err)
-	}
-	initTemplates[name] = tmpl
-	return tmpl
-}

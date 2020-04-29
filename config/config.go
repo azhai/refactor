@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	DEFAULT_FILE_MODE = 0644
 	DEFAULT_DIR_MODE  = 0755
+	DEFAULT_FILE_MODE = 0644
 )
 
 type IConnectSettings interface {
@@ -64,7 +64,7 @@ func ReadSettings(fileName string) (*Settings, error) {
 	return cfg, err
 }
 
-func SaveSettings(cfg interface{}, fileName string) error {
+func SaveSettings(fileName string, cfg interface{}) error {
 	wt, err := os.Open(fileName)
 	if err == nil {
 		err = yaml.NewEncoder(wt).Encode(cfg)

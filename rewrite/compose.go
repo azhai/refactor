@@ -28,9 +28,9 @@ var substituteModels = map[string]*ModelSummary{
 		Import: "gitea.com/azhai/refactor/language/common",
 		Alias:  "base",
 		FieldLines: []string{
-			"Lft   int `json:\"lft\" xorm:\"not null default 0 comment('左边界') INT(10)\"`           // 左边界",
-			"Rgt   int `json:\"rgt\" xorm:\"not null default 0 comment('右边界') index INT(10)\"`     // 右边界",
-			"Depth int `json:\"depth\" xorm:\"not null default 1 comment('高度') index TINYINT(3)\"` // 高度",
+			"Lft   int `json:\"lft\" xorm:\"notnull default 0 comment('左边界') INT(10)\"`           // 左边界",
+			"Rgt   int `json:\"rgt\" xorm:\"notnull default 0 comment('右边界') index INT(10)\"`     // 右边界",
+			"Depth int `json:\"depth\" xorm:\"notnull default 1 comment('高度') index TINYINT(3)\"` // 高度",
 		},
 	},
 }
@@ -134,7 +134,7 @@ func ReplaceSummary(summary, sub *ModelSummary) *ModelSummary {
 	var features, lines []string
 	find, sted := false, sub.GetSortedFeatures()
 	for i, ft := range summary.Features {
-		if !utils.InStringList(ft, sted, utils.CMP_STRING_EQUAL) {
+		if !utils.InStringList(ft, sted) {
 			features = append(features, ft)
 			lines = append(lines, summary.FieldLines[i])
 		} else if !find {

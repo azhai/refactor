@@ -125,7 +125,6 @@ func QueryAll(filter base.FilterFunc, pages ...int) *xorm.Session {
 import (
 	"gitea.com/azhai/refactor/config"
 	base "gitea.com/azhai/refactor/language/common"
-	"xorm.io/xorm"
 )
 
 var (
@@ -180,4 +179,14 @@ func GetGolangTemplate(name string, funcs template.FuncMap) *template.Template {
 		return tmpl
 	}
 	return NewTemplate(name, content, funcs)
+}
+
+func NewTemplate(name, content string, funcs template.FuncMap) *template.Template {
+	t := template.New(name).Funcs(funcs)
+	tmpl, err := t.Parse(content)
+	if err != nil {
+		panic(err)
+	}
+	initTemplates[name] = tmpl
+	return tmpl
 }
