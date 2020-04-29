@@ -233,8 +233,8 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 		return errors.New("you have to indicate template / template path or a language")
 	}
 	tmpl := language.NewTemplate("custom-model", string(bs), funcs)
+	queryImports := map[string]string{"xorm.io/xorm":""}
 
-	queryImports := make(map[string]string)
 	tables := make(map[string]*schemas.Table)
 	for _, table := range tableSchemas {
 		tableName := table.Name
@@ -245,11 +245,6 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 			col.FieldName = colMapper.Table2Obj(col.Name)
 		}
 		tables[tableName] = table
-		pkey := GetSinglePKey(table)
-		if pkey != "" && pkey != "Id" {
-			queryImports["xorm.io/xorm"] = ""
-			// queryImports["gitea.com/azhai/refactor/language/common"] = "base"
-		}
 	}
 
 	err = os.MkdirAll(target.OutputDir, os.ModePerm)

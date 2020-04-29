@@ -46,9 +46,7 @@ func (m *{{$class}}) Load(where interface{}, args ...interface{}) (bool, error) 
 	return engine.NewSession().Where(where, args...).Get(m)
 }
 
-{{if eq $pkey "" -}}
-{{else if eq $pkey "Id" -}}
-{{else -}}
+{{if ne $pkey "" -}}
 func (m *{{$class}}) Save(changes map[string]interface{}) error {
 	return ExecTx(func(tx *xorm.Session) (int64, error) {
 		if changes == nil || m.{{$pkey}} == 0 {
@@ -62,7 +60,7 @@ func (m *{{$class}}) Save(changes map[string]interface{}) error {
 {{end -}}
 `
 
-	golangConnTemplate = fmt.Sprintf(`package {{.Target.NameSpace}}
+	golangConnTemplate = `package {{.Target.NameSpace}}
 
 import (
 	"gitea.com/azhai/refactor/config"
@@ -100,21 +98,6 @@ func Table(name interface{}) *xorm.Session {
 	return engine.Table(name)
 }
 
-// 带自增主键的基础Model
-type BaseMixin struct {
-	Id int %sjson:"id" xorm:"notnull pk autoincr INT(10)"%s
-}
-
-func (m *BaseMixin) Save(changes map[string]interface{}) error {
-	return ExecTx(func(tx *xorm.Session) (int64, error) {
-		if changes == nil || m.Id == 0 {
-			return tx.Insert(m)
-		} else {
-			return tx.Table(m).ID(m.Id).Update(changes)
-		}
-	})
-}
-
 // 查询多行数据
 func QueryAll(filter base.FilterFunc, pages ...int) *xorm.Session {
 	query := engine.NewSession()
@@ -142,7 +125,7 @@ func ExecTx(modify base.ModifyFunc) error {
 	}
 	return tx.Commit()
 }
-`, "`", "`")
+`
 
 	golangCacheTemplate = `package {{.Target.NameSpace}}
 
