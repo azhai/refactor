@@ -43,7 +43,7 @@ import (
 {{$class := TableMapper .Name -}}
 {{$pkey := GetSinglePKey . -}}
 func (m *{{$class}}) Load(where interface{}, args ...interface{}) (bool, error) {
-	return engine.NewSession().Where(where, args...).Get(m)
+	return Table().Where(where, args...).Get(m)
 }
 
 {{if ne $pkey "" -}}
@@ -98,11 +98,7 @@ func Table(args ...interface{}) *xorm.Session {
 	if args == nil {
 		return engine.NewSession()
 	}
-	query := engine.Table(args[0])
-	if len(args) >= 2 {
-		query = query.Where(args[1], args[2:]...)
-	}
-	return query
+	return engine.Table(args[0])
 }
 
 // 查询多行数据
