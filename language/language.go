@@ -58,4 +58,3 @@ func (l *Language) FixTarget(target *config.ReverseTarget) {
 		}
 	}
 }
-

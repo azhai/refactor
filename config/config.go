@@ -42,9 +42,9 @@ type PartConfig struct {
 }
 
 type ConnConfig struct {
-	DriverName string             `json:"driver_name" yaml:"driver_name"`
-	ReadOnly   bool               `json:"read_only" yaml:"read_only"`
-	Params     dialect.ConnParams `json:"params" yaml:"params"`
+	DriverName string                          `json:"driver_name" yaml:"driver_name"`
+	ReadOnly   bool                            `json:"read_only" yaml:"read_only"`
+	Params     dialect.ConnParams              `json:"params" yaml:"params"`
 	PartConfig `json:",inline" yaml:",inline"` // 注意逗号不能少
 }
 

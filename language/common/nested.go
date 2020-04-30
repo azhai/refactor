@@ -14,7 +14,7 @@ type NestedMixin struct {
 
 // 是否叶子节点
 func (n NestedMixin) IsLeaf() bool {
-	return n.Rgt - n.Lft == 1
+	return n.Rgt-n.Lft == 1
 }
 
 // 有多少个子孙节点

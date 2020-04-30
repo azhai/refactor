@@ -150,18 +150,16 @@ func Reverse(source *config.DataSource, target *config.ReverseTarget) error {
 	_, err := formatter(fileName, buf.Bytes())
 
 	if target.ApplyMixins {
-		files, _ := filesystem.FindFiles("./language/common/", ".go")
-		baseImport := "gitea.com/azhai/refactor/language/common"
-		for fileName := range files {
-			_ = rewrite.AddFormerMixins(fileName, baseImport, "base")
-		}
 		if target.MixinDirPath != "" {
 			files, _ := filesystem.FindFiles(target.MixinDirPath, ".go")
 			for fileName := range files {
+				if strings.HasSuffix(fileName, "_test.go") {
+					continue
+				}
 				_ = rewrite.AddFormerMixins(fileName, target.MixinNameSpace, "")
 			}
 		}
-		files, _ = filesystem.FindFiles(target.OutputDir, ".go")
+		files, _ := filesystem.FindFiles(target.OutputDir, ".go")
 		for fileName := range files {
 			_err := rewrite.ParseAndMixinFile(fileName, true)
 			if _err != nil {
@@ -233,7 +231,7 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 		return errors.New("you have to indicate template / template path or a language")
 	}
 	tmpl := language.NewTemplate("custom-model", string(bs), funcs)
-	queryImports := map[string]string{"xorm.io/xorm":""}
+	queryImports := map[string]string{"xorm.io/xorm": ""}
 
 	tables := make(map[string]*schemas.Table)
 	for _, table := range tableSchemas {
