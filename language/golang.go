@@ -7,6 +7,7 @@ package language
 import (
 	"errors"
 	"fmt"
+	"go/token"
 	"html/template"
 	"path/filepath"
 	"reflect"
@@ -15,6 +16,7 @@ import (
 
 	"gitea.com/azhai/refactor/config"
 	"gitea.com/azhai/refactor/rewrite"
+	"github.com/azhai/gozzo-utils/filesystem"
 	"xorm.io/xorm/schemas"
 )
 
@@ -79,9 +81,28 @@ func getCol(cols map[string]*schemas.Column, name string) *schemas.Column {
 }
 
 func genNameSpace(targetDir string) string {
-	nameSpace := filepath.Base(targetDir)
+	// 先重试提取已有代码文件（排除测试代码）的包名
+	files, err := filesystem.FindFiles(targetDir, ".go")
+	if err == nil && len(files) > 0 {
+		for fileName := range files {
+			if strings.HasSuffix(fileName, "_test.go") {
+				continue
+			}
+			cp, err := rewrite.NewFileParser(fileName)
+			if err != nil {
+				continue
+			}
+			if nameSpace := cp.GetPackage(); nameSpace != "" {
+				return nameSpace
+			}
+		}
+	}
+	// 否则直接使用目录名，需要排除Golang关键词
+	nameSpace := strings.ToLower(filepath.Base(targetDir))
 	if nameSpace == "default" { // it is golang keyword
 		nameSpace = "db"
+	} else if token.IsKeyword(nameSpace) {
+		nameSpace = "db" + nameSpace
 	}
 	return nameSpace
 }

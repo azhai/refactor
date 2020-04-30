@@ -91,11 +91,18 @@ func Engine() *xorm.Engine {
 }
 
 // 查询某张数据表
-func Table(name interface{}) *xorm.Session {
+func Table(args ...interface{}) *xorm.Session {
 	if engine == nil {
 		return nil
 	}
-	return engine.Table(name)
+	if args == nil {
+		return engine.NewSession()
+	}
+	query := engine.Table(args[0])
+	if len(args) >= 2 {
+		query = query.Where(args[1], args[2:]...)
+	}
+	return query
 }
 
 // 查询多行数据
