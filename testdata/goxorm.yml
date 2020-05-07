@@ -1,16 +1,16 @@
 kind: reverse
 name: mydb
 source:
-  database: sqlite3
-  conn_str: './testdata/test.db'
+   database: sqlite3
+   conn_str: './testdata/test.db'
 targets:
-- type: codes
-  gen_json_tag: true
-  gen_table_name: false
-  include_tables:
-    - a
-    - b
-  exclude_tables:
-    - c
-  language: golang
-  output_dir: ./models
+   -  type: codes
+      language: golang
+      output_dir: ./models
+      gen_json_tag: true
+      gen_table_name: false
+      include_tables:
+         - a
+         - b
+      exclude_tables:
+         - c

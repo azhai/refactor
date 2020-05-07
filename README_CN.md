@@ -183,8 +183,8 @@ reverse_targets:
       column_mapper: snake    # 字段名到代码或结构体成员的映射关系
       output_dir: "./models"  # 代码生成目录
       multiple_files: false   # 是否生成多个文件
-      template_path: "./template/goxorm.tmpl" # 生成的模板的路径，优先级比 language 中的默认模板高
-      query_template_path: "" # 自定义查询方法模板
+      template_path: "" # 生成的模板的路径，优先级比 language 中的默认模板高
+      query_template_path: "./testdata/query.tmpl" # 自定义查询方法模板
       gen_json_tag: true      # 生成JSON标签
       gen_table_name: true    # 生成TableName()方法
       gen_query_methods: true # 生成查询方法

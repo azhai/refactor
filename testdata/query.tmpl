@@ -1,0 +1,27 @@
+{{if not .Target.MultipleFiles}}package {{.Target.NameSpace}}
+
+{{$ilen := len .Imports}}{{if gt $ilen 0 -}}
+import (
+	{{range $imp, $al := .Imports}}{{$al}} "{{$imp}}"{{end}}
+)
+{{end -}}{{end -}}
+
+{{range .Tables}}
+{{$class := TableMapper .Name -}}
+{{$pkey := GetSinglePKey . -}}
+func (m *{{$class}}) Load(where interface{}, args ...interface{}) (bool, error) {
+	return Table().Where(where, args...).Get(m)
+}
+
+{{if ne $pkey "" -}}
+func (m *{{$class}}) Save(changes map[string]interface{}) error {
+	return ExecTx(func(tx *xorm.Session) (int64, error) {
+		if changes == nil || m.{{$pkey}} == 0 {
+			return tx.Insert(m)
+		} else {
+			return tx.Table(m).ID(m.{{$pkey}}).Update(changes)
+		}
+	})
+}
+{{end -}}
+{{end -}}
