@@ -31,7 +31,7 @@ type FieldNode struct {
 }
 
 func (n *FieldNode) GetTag() reflect.StructTag {
-	var tag = ""
+	tag := ""
 	if n.Tag != nil {
 		tag = strings.Trim(n.Tag.Value, "` ")
 	}
@@ -163,7 +163,7 @@ func (cp *CodeParser) ParseDecls(kind string, limit int) bool {
 }
 
 func (cp *CodeParser) GetDeclNode(kind string, offset int) *DeclNode {
-	var count = offset + 1
+	count := offset + 1
 	if idxes, ok := cp.DeclIndexes[kind]; ok {
 		if offset >= 0 && len(idxes) > offset {
 			index := idxes[offset]

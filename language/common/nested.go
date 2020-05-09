@@ -47,13 +47,12 @@ func (n NestedMixin) ChildrenFilter(rank uint8) FilterFunc {
 			query = query.OrderBy("depth ASC")
 		}
 		return query.OrderBy("rgt ASC")
-
 	}
 }
 
 // 添加到父节点最末，tbQuery一定要使用db.Table(...)
 func (n *NestedMixin) AddToParent(parent *NestedMixin, tbQuery *xorm.Session) error {
-	var query = tbQuery.OrderBy("rgt DESC")
+	query := tbQuery.OrderBy("rgt DESC")
 	if parent == nil {
 		n.Depth = 1
 	} else {

@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	DEFAULT_DIR_MODE  = 0755
-	DEFAULT_FILE_MODE = 0644
+	DEFAULT_DIR_MODE  = 0o755
+	DEFAULT_FILE_MODE = 0o644
 )
 
 type IConnectSettings interface {

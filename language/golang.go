@@ -215,7 +215,7 @@ func tagXorm(table *schemas.Table, col *schemas.Column) string {
 		} else {
 			nstr += fmt.Sprintf("(%v)", col.Length)
 		}
-	} else if len(col.EnumOptions) > 0 { //enum
+	} else if len(col.EnumOptions) > 0 { // enum
 		nstr += "("
 		opts := ""
 
@@ -230,7 +230,7 @@ func tagXorm(table *schemas.Table, col *schemas.Column) string {
 		}
 		nstr += strings.TrimLeft(opts, ",")
 		nstr += ")"
-	} else if len(col.SetOptions) > 0 { //enum
+	} else if len(col.SetOptions) > 0 { // enum
 		nstr += "("
 		opts := ""
 

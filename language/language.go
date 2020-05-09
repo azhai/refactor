@@ -12,9 +12,11 @@ import (
 	"xorm.io/xorm/schemas"
 )
 
-type Formatter func(fileName string, sourceCode []byte) ([]byte, error)
-type Importter func(tables map[string]*schemas.Table) map[string]string
-type Packager func(targetDir string) string
+type (
+	Formatter func(fileName string, sourceCode []byte) ([]byte, error)
+	Importter func(tables map[string]*schemas.Table) map[string]string
+	Packager  func(targetDir string) string
+)
 
 // Language represents a languages supported when reverse codes
 type Language struct {
@@ -28,9 +30,7 @@ type Language struct {
 	Packager  Packager
 }
 
-var (
-	languages = make(map[string]*Language)
-)
+var languages = make(map[string]*Language)
 
 // RegisterLanguage registers a language
 func RegisterLanguage(l *Language) {

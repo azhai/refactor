@@ -56,7 +56,7 @@ func GetSinglePKey(table *schemas.Table) (pkey string) {
 }
 
 func filterTables(tables []*schemas.Table, target *config.ReverseTarget) []*schemas.Table {
-	var res = make([]*schemas.Table, 0, len(tables))
+	res := make([]*schemas.Table, 0, len(tables))
 	for _, tb := range tables {
 		var remove bool
 		for _, exclude := range target.ExcludeTables {
@@ -90,7 +90,7 @@ func filterTables(tables []*schemas.Table, target *config.ReverseTarget) []*sche
 }
 
 func newFuncs() template.FuncMap {
-	var m = make(template.FuncMap)
+	m := make(template.FuncMap)
 	for k, v := range defaultFuncs {
 		m[k] = v
 	}
@@ -205,8 +205,8 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 		}
 	}
 
-	var tableMapper = convertMapper(target.TableMapper)
-	var colMapper = convertMapper(target.ColumnMapper)
+	tableMapper := convertMapper(target.TableMapper)
+	colMapper := convertMapper(target.ColumnMapper)
 	funcs["TableMapper"] = tableMapper.Table2Obj
 	funcs["ColumnMapper"] = colMapper.Table2Obj
 
