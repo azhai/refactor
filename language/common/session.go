@@ -21,11 +21,8 @@ const (
 	SESS_LIST_SEP   = ";"    // 角色名之间的分隔符
 )
 
-func InitCache(cfg config.IConnectSettings, name string, verbose bool) (*SessionRegistry, error) {
-	var sessreg *SessionRegistry
-	conns := cfg.GetConnections(name)
-	c, ok := conns[name]
-	if !ok || c.DriverName != "redis" {
+func InitCache(c config.ConnConfig, verbose bool) (*SessionRegistry, error) {
+	if c.DriverName != "redis" {
 		return nil, nil
 	}
 	d := dialect.GetDialectByName(c.DriverName).(*dialect.Redis)
@@ -36,7 +33,7 @@ func InitCache(cfg config.IConnectSettings, name string, verbose bool) (*Session
 	dial := func() (redis.Conn, error) {
 		return d.Connect()
 	}
-	sessreg = NewRegistry(redisw.NewRedisPool(dial, -1))
+	sessreg := NewRegistry(redisw.NewRedisPool(dial, -1))
 	return sessreg, nil
 }
 

@@ -89,8 +89,8 @@ func (cfg Settings) GetConnections(keys ...string) map[string]ConnConfig {
 	return result
 }
 
-func NewDataSource(k string, c ConnConfig) *DataSource {
-	d := &DataSource{ConnKey: k, PartConfig: c.PartConfig}
+func NewDataSource(c ConnConfig, name string) *DataSource {
+	d := &DataSource{ConnKey: name, PartConfig: c.PartConfig}
 	d.Dialect = dialect.GetDialectByName(c.DriverName)
 	if d.Dialect != nil {
 		d.ReverseSource = &ReverseSource{
@@ -108,6 +108,15 @@ func (ds *DataSource) Connect(verbose bool) (*xorm.Engine, error) {
 		pp.Println(ds.Database, ds.ConnStr)
 	}
 	engine, err := xorm.NewEngine(ds.Database, ds.ConnStr)
+	if err == nil {
+		engine.ShowSQL(verbose)
+	}
+	return engine, err
+}
+
+func (c ConnConfig) Connect(verbose bool) (*xorm.Engine, error) {
+	d := dialect.GetDialectByName(c.DriverName)
+	engine, err := xorm.NewEngine(d.Name(), d.ParseDSN(c.Params))
 	if err == nil {
 		engine.ShowSQL(verbose)
 	}

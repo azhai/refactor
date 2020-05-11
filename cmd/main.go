@@ -13,7 +13,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-const VERSION = "0.9.0"
+const VERSION = "0.9.1"
 
 var ReverseFlags = []cli.Flag{
 	&cli.StringFlag{

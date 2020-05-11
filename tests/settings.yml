@@ -10,7 +10,7 @@ mysql: &mysql  #共用数据库配置
       username: "root"
       password: ""
       database: "test"
-      options: { charset: "utf8mb4" }
+      options: { charset: "utf8" }
 
 connections:
    cache:
@@ -25,19 +25,23 @@ connections:
       read_only: false
       table_prefix: "t_"
       exclude_tables:
-         - "a"
-         - "b"
-         - "c"
-         - "d"
-      <<: *mysql  #引用sqlite配置
+         - "t_cron_*"
+      <<: *mysql  #引用mysql配置
+
+   cron:  #业务数据库
+      read_only: false
+      table_prefix: "t_"
+      include_tables:
+         - "t_cron_*"
+      <<: *mysql  #引用mysql配置
 
 reverse_targets:
    -  type: "codes"
       language: "golang"
       multiple_files: false
-      output_dir: "./testdata/models"
+      output_dir: "./models"
       template_path: ""
-      query_template_path: ""
+      query_template_path: "./golang_query.tmpl"
       gen_json_tag: true   # 生成JSON标签
       gen_table_name: true # 生成TableName()方法
       gen_query_methods: true # 生成查询方法

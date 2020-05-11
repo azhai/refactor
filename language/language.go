@@ -12,6 +12,11 @@ import (
 	"xorm.io/xorm/schemas"
 )
 
+var (
+	languages       = make(map[string]*Language)
+	presetTemplates = make(map[string]*template.Template)
+)
+
 type (
 	Formatter func(fileName string, sourceCode []byte) ([]byte, error)
 	Importter func(tables map[string]*schemas.Table) map[string]string
@@ -29,8 +34,6 @@ type Language struct {
 	Importter Importter
 	Packager  Packager
 }
-
-var languages = make(map[string]*Language)
 
 // RegisterLanguage registers a language
 func RegisterLanguage(l *Language) {
@@ -57,4 +60,21 @@ func (l *Language) FixTarget(target *config.ReverseTarget) {
 			target.NameSpace = "models"
 		}
 	}
+}
+
+func NewTemplate(name, content string, funcs template.FuncMap) *template.Template {
+	t := template.New(name).Funcs(funcs)
+	tmpl, err := t.Parse(content)
+	if err != nil {
+		panic(err)
+	}
+	presetTemplates[name] = tmpl
+	return tmpl
+}
+
+func GetPresetTemplate(name string) *template.Template {
+	if tmpl, ok := presetTemplates[name]; ok {
+		return tmpl
+	}
+	return nil
 }

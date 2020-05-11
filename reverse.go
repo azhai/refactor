@@ -211,13 +211,13 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 	funcs["ColumnMapper"] = colMapper.Table2Obj
 
 	// 配置模板优先于语言模板
-	tmplQuery := language.GetGolangTemplate("query", funcs)
+	var tmplQuery *template.Template
 	if target.QueryTemplatePath != "" {
 		qt, err := ioutil.ReadFile(target.QueryTemplatePath)
 		if err == nil || len(qt) > 0 {
 			tmplQuery = language.NewTemplate("custom-query", string(qt), funcs)
 		} else {
-			target.GenQueryMethods, tmplQuery = false, nil
+			target.GenQueryMethods = false
 		}
 	}
 	if target.TemplatePath != "" {
@@ -307,7 +307,7 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 func ExecReverseSettings(cfg config.IReverseSettings, names ...string) error {
 	conns := cfg.GetConnections(names...)
 	for key, conf := range conns {
-		d := config.NewDataSource(key, conf)
+		d := config.NewDataSource(conf, key)
 		if d.ReverseSource == nil {
 			continue
 		}

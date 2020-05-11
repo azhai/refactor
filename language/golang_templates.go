@@ -7,8 +7,6 @@ import (
 )
 
 var (
-	initTemplates = make(map[string]*template.Template)
-
 	golangModelTemplate = fmt.Sprintf(`package {{.Target.NameSpace}}
 
 {{$ilen := len .Imports}}{{if gt $ilen 0}}import (
@@ -31,35 +29,6 @@ func ({{$class}}) TableName() string {
 {{end}}
 `, "`", "`")
 
-	golangQueryTemplate = `{{if not .Target.MultipleFiles}}package {{.Target.NameSpace}}
-
-{{$ilen := len .Imports}}{{if gt $ilen 0 -}}
-import (
-	{{range $imp, $al := .Imports}}{{$al}} "{{$imp}}"{{end}}
-)
-{{end -}}{{end -}}
-
-{{range .Tables}}
-{{$class := TableMapper .Name -}}
-{{$pkey := GetSinglePKey . -}}
-func (m *{{$class}}) Load(where interface{}, args ...interface{}) (bool, error) {
-	return Table().Where(where, args...).Get(m)
-}
-
-{{if ne $pkey "" -}}
-func (m *{{$class}}) Save(changes map[string]interface{}) error {
-	return ExecTx(func(tx *xorm.Session) (int64, error) {
-		if changes == nil || m.{{$pkey}} == 0 {
-			return tx.Insert(m)
-		} else {
-			return tx.Table(m).ID(m.{{$pkey}}).Update(changes)
-		}
-	})
-}
-{{end -}}
-{{end -}}
-`
-
 	golangConnTemplate = `package {{.Target.NameSpace}}
 
 import (
@@ -79,15 +48,26 @@ var (
 // 初始化、连接数据库和缓存
 func Initialize(cfg config.IConnectSettings, verbose bool) {
 	var err error
-	engine, err = base.InitConn(cfg, "{{.ConnKey}}", verbose)
-	if err != nil || engine == nil {
-		panic(err)
+	conns := cfg.GetConnections("{{.ConnKey}}")
+	if c, ok := conns["{{.ConnKey}}"]; ok {
+		engine, err = c.Connect(verbose)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
 // 查询某张数据表
 func Engine() *xorm.Engine {
 	return engine
+}
+
+// 转义表名或字段名
+func Quote(value string) string {
+	if engine == nil {
+		return value
+	}
+	return engine.Quote(value)
 }
 
 // 查询某张数据表
@@ -99,6 +79,18 @@ func Table(args ...interface{}) *xorm.Session {
 		return engine.NewSession()
 	}
 	return engine.Table(args[0])
+}
+
+// 执行事务
+func ExecTx(modify base.ModifyFunc) error {
+	tx := engine.NewSession() // 必须是新的session
+	defer tx.Close()
+	_ = tx.Begin()
+	if _, err := modify(tx); err != nil {
+		_ = tx.Rollback() // 失败回滚
+		return err
+	}
+	return tx.Commit()
 }
 
 // 查询多行数据
@@ -116,18 +108,6 @@ func QueryAll(filter base.FilterFunc, pages ...int) *xorm.Session {
 	}
 	return base.Paginate(query, pageno, pagesize)
 }
-
-// 执行事务
-func ExecTx(modify base.ModifyFunc) error {
-	tx := engine.NewSession() // 必须是新的session
-	defer tx.Close()
-	_ = tx.Begin()
-	if _, err := modify(tx); err != nil {
-		_ = tx.Rollback() // 失败回滚
-		return err
-	}
-	return tx.Commit()
-}
 `
 
 	golangCacheTemplate = `package {{.Target.NameSpace}}
@@ -144,9 +124,12 @@ var (
 // 初始化、连接数据库和缓存
 func Initialize(cfg config.IConnectSettings, verbose bool) {
 	var err error
-	sessreg, err = base.InitCache(cfg, "{{.ConnKey}}", verbose)
-	if err != nil {
-		panic(err)
+	conns := cfg.GetConnections("{{.ConnKey}}")
+	if c, ok := conns["{{.ConnKey}}"]; ok {
+		sessreg, err = base.InitCache(c, verbose)
+		if err != nil {
+			panic(err)
+		}
 	}
 }
 
@@ -182,21 +165,9 @@ func GetGolangTemplate(name string, funcs template.FuncMap) *template.Template {
 		name, content = "cache", golangCacheTemplate
 	case "conn":
 		name, content = "conn", golangConnTemplate
-	case "query":
-		name, content = "query", golangQueryTemplate
 	}
-	if tmpl, ok := initTemplates[name]; ok {
+	if tmpl := GetPresetTemplate(name); tmpl != nil {
 		return tmpl
 	}
 	return NewTemplate(name, content, funcs)
-}
-
-func NewTemplate(name, content string, funcs template.FuncMap) *template.Template {
-	t := template.New(name).Funcs(funcs)
-	tmpl, err := t.Parse(content)
-	if err != nil {
-		panic(err)
-	}
-	initTemplates[name] = tmpl
-	return tmpl
 }

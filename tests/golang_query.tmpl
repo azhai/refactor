@@ -17,7 +17,7 @@ func (m *{{$class}}) Load(where interface{}, args ...interface{}) (bool, error) 
 func (m *{{$class}}) Save(changes map[string]interface{}) error {
 	return ExecTx(func(tx *xorm.Session) (int64, error) {
 		if changes == nil || m.{{$pkey}} == 0 {
-			return tx.Insert(m)
+			return tx.Table(m).Insert(changes)
 		} else {
 			return tx.Table(m).ID(m.{{$pkey}}).Update(changes)
 		}
