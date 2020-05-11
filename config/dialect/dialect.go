@@ -24,6 +24,7 @@ var dialects = map[string]Dialect{
 
 type Dialect interface {
 	Name() string
+	ImporterPath() string
 	QuoteIdent(ident string) string
 	ParseDSN(params ConnParams) string
 }

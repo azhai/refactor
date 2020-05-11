@@ -9,6 +9,10 @@ func (Oracle) Name() string {
 	return "oracle"
 }
 
+func (Oracle) ImporterPath() string {
+	return "github.com/mattn/go-oci8"
+}
+
 func (Oracle) QuoteIdent(ident string) string {
 	return WrapWith(ident, "{", "}")
 }

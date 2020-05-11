@@ -49,8 +49,9 @@ type ConnConfig struct {
 }
 
 type DataSource struct {
-	ConnKey string
-	Dialect dialect.Dialect
+	ConnKey      string
+	ImporterPath string
+	Dialect      dialect.Dialect
 	PartConfig
 	*ReverseSource
 }
@@ -93,6 +94,7 @@ func NewDataSource(c ConnConfig, name string) *DataSource {
 	d := &DataSource{ConnKey: name, PartConfig: c.PartConfig}
 	d.Dialect = dialect.GetDialectByName(c.DriverName)
 	if d.Dialect != nil {
+		d.ImporterPath = d.Dialect.ImporterPath()
 		d.ReverseSource = &ReverseSource{
 			Database: d.Dialect.Name(),
 			ConnStr:  d.Dialect.ParseDSN(c.Params),

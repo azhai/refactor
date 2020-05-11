@@ -9,22 +9,6 @@ import (
 	"xorm.io/xorm"
 )
 
-var (
-	connKey     = "default"
-	configFile  = "./settings.yml"
-	testSqlFile = "./mysql_test.sql"
-)
-
-func init() {
-	var err error
-	if err = createTables(); err != nil {
-		panic(err)
-	}
-	if err = generateModels(); err != nil {
-		panic(err)
-	}
-}
-
 func getDataSource(cfg config.IReverseSettings, name string) (*config.DataSource, error) {
 	conns := cfg.GetConnections(name)
 	if c, ok := conns[name]; ok {
@@ -39,35 +23,23 @@ func getDataSource(cfg config.IReverseSettings, name string) (*config.DataSource
 	return nil, err
 }
 
-func getConnection(key string) (*xorm.Engine, error) {
-	cfg, err := config.ReadSettings(configFile)
-	if err != nil {
-		return nil, err
-	}
-	var d *config.DataSource
-	if d, err = getDataSource(cfg, key); err != nil {
-		return nil, err
-	}
-	return d.Connect(false)
-}
-
-func createTables() error {
-	db, err := getConnection(connKey)
+func createTables(cfg config.IReverseSettings) error {
+	d, err := getDataSource(cfg, "default")
 	if err != nil {
 		return err
 	}
-	_, err = db.ImportFile(testSqlFile)
+	var db *xorm.Engine
+	if db, err = d.Connect(false); err == nil {
+		_, err = db.ImportFile(testSqlFile)
+	}
 	return err
 }
 
-func generateModels(names ...string) error {
-	cfg, err := config.ReadSettings(configFile)
-	if err != nil {
-		return err
-	}
+func generateModels(cfg config.IReverseSettings, names ...string) error {
 	var d *config.DataSource
 	conns := cfg.GetConnections(names...)
 	for key := range conns {
+		var err error
 		if d, err = getDataSource(cfg, key); err != nil {
 			return err
 		}

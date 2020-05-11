@@ -9,9 +9,11 @@ import (
 var (
 	golangModelTemplate = fmt.Sprintf(`package {{.Target.NameSpace}}
 
-{{$ilen := len .Imports}}{{if gt $ilen 0}}import (
+{{$ilen := len .Imports}}{{if gt $ilen 0 -}}
+import (
 	{{range $imp, $al := .Imports}}{{$al}} "{{$imp}}"{{end}}
-){{end}}
+)
+{{end -}}
 {{$gen_json := .Target.GenJsonTag -}}
 {{$gen_table := .Target.GenTableName -}}
 
@@ -34,10 +36,7 @@ func ({{$class}}) TableName() string {
 import (
 	"gitea.com/azhai/refactor/config"
 	base "gitea.com/azhai/refactor/language/common"
-	_ "github.com/denisenkom/go-mssqldb"
-	_ "github.com/go-sql-driver/mysql"
-	_ "github.com/lib/pq"
-	_ "github.com/mattn/go-sqlite3"
+	_ "{{.ImporterPath}}"
 	"xorm.io/xorm"
 )
 
@@ -46,14 +45,11 @@ var (
 )
 
 // 初始化、连接数据库和缓存
-func Initialize(cfg config.IConnectSettings, verbose bool) {
+func Initialize(c config.ConnConfig, verbose bool) {
 	var err error
-	conns := cfg.GetConnections("{{.ConnKey}}")
-	if c, ok := conns["{{.ConnKey}}"]; ok {
-		engine, err = c.Connect(verbose)
-		if err != nil {
-			panic(err)
-		}
+	engine, err = c.Connect(verbose)
+	if err != nil {
+		panic(err)
 	}
 }
 
@@ -122,14 +118,11 @@ var (
 )
 
 // 初始化、连接数据库和缓存
-func Initialize(cfg config.IConnectSettings, verbose bool) {
+func Initialize(c config.ConnConfig, verbose bool) {
 	var err error
-	conns := cfg.GetConnections("{{.ConnKey}}")
-	if c, ok := conns["{{.ConnKey}}"]; ok {
-		sessreg, err = base.InitCache(c, verbose)
-		if err != nil {
-			panic(err)
-		}
+	sessreg, err = base.InitCache(c, verbose)
+	if err != nil {
+		panic(err)
 	}
 }
 
@@ -159,12 +152,12 @@ func DelSession(token string) bool {
 func GetGolangTemplate(name string, funcs template.FuncMap) *template.Template {
 	var content string
 	switch strings.ToLower(name) {
-	default:
-		name, content = "model", golangModelTemplate
 	case "cache":
 		name, content = "cache", golangCacheTemplate
 	case "conn":
 		name, content = "conn", golangConnTemplate
+	default:
+		name, content = "model", golangModelTemplate
 	}
 	if tmpl := GetPresetTemplate(name); tmpl != nil {
 		return tmpl

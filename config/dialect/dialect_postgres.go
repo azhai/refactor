@@ -9,6 +9,10 @@ func (Postgres) Name() string {
 	return "postgres"
 }
 
+func (Postgres) ImporterPath() string {
+	return "github.com/lib/pq"
+}
+
 func (Postgres) QuoteIdent(ident string) string {
 	return WrapWith(ident, `"`, `"`)
 }

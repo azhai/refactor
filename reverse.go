@@ -139,14 +139,15 @@ func Reverse(source *config.DataSource, target *config.ReverseTarget) error {
 	}
 	buf := new(bytes.Buffer)
 	data := map[string]interface{}{
-		"Target":    target,
-		"NameSpace": target.NameSpace,
-		"ConnKey":   source.ConnKey,
+		"Target":       target,
+		"NameSpace":    target.NameSpace,
+		"ConnKey":      source.ConnKey,
+		"ImporterPath": source.ImporterPath,
 	}
 	if err := tmpl.Execute(buf, data); err != nil {
 		return err
 	}
-	fileName := target.GetFileName(config.INIT_FILE_NAME)
+	fileName := target.GetFileName(config.CONN_FILE_NAME)
 	_, err := formatter(fileName, buf.Bytes())
 
 	if target.ApplyMixins {

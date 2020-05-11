@@ -7,6 +7,10 @@ func (Sqlite) Name() string {
 	return "sqlite"
 }
 
+func (Sqlite) ImporterPath() string {
+	return "github.com/mattn/go-sqlite3"
+}
+
 func (Sqlite) QuoteIdent(ident string) string {
 	return WrapWith(ident, "`", "`")
 }

@@ -9,6 +9,10 @@ func (Mssql) Name() string {
 	return "mssql"
 }
 
+func (Mssql) ImporterPath() string {
+	return "github.com/denisenkom/go-mssqldb"
+}
+
 func (Mssql) QuoteIdent(ident string) string {
 	return WrapWith(ident, "[", "]")
 }

@@ -20,6 +20,10 @@ func (Redis) Name() string {
 	return "redis"
 }
 
+func (Redis) ImporterPath() string {
+	return "github.com/gomodule/redigo/redis"
+}
+
 func (Redis) QuoteIdent(ident string) string {
 	return WrapWith(ident, "'", "'")
 }

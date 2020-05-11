@@ -2,7 +2,6 @@ package dialect
 
 import (
 	"fmt"
-	// _ "github.com/go-sql-driver/mysql"
 )
 
 const MYSQL_DEFAULT_PORT uint16 = 3306
@@ -12,6 +11,10 @@ type Mysql struct {
 
 func (Mysql) Name() string {
 	return "mysql"
+}
+
+func (Mysql) ImporterPath() string {
+	return "github.com/go-sql-driver/mysql"
 }
 
 func (Mysql) QuoteIdent(ident string) string {

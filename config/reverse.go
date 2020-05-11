@@ -11,6 +11,7 @@ import (
 
 const ( // 约定大于配置
 	INIT_FILE_NAME   = "init"
+	CONN_FILE_NAME   = "conn"
 	SINGLE_FILE_NAME = "models"
 	QUERY_FILE_NAME  = "queries"
 

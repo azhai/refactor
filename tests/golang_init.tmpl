@@ -1,0 +1,38 @@
+package models
+
+import (
+	"gitea.com/azhai/refactor/config"
+	"gitea.com/azhai/refactor/tests/models/cache"
+	"gitea.com/azhai/refactor/tests/models/cron"
+	"gitea.com/azhai/refactor/tests/models/default"
+)
+
+var (
+	configFile  = "../settings.yml"
+	empty      = config.ConnConfig{}
+	settings   *config.Settings
+)
+
+func init() {
+	cfg, err := config.ReadSettings(configFile)
+	if err != nil {
+		panic(err)
+	}
+	verbose := cfg.Application.Debug
+	Initialize(cfg, verbose)
+}
+
+// 初始化、连接数据库和缓存
+func Initialize(cfg config.IConnectSettings, verbose bool) {
+	conns := cfg.GetConnections()
+	for key, c := range conns {
+		switch key {
+		case "cache":
+			cache.Connect(c, verbose)
+		case "cron":
+			cron.Connect(c, verbose)
+		case "default":
+			db.Connect(c, verbose)
+		}
+	}
+}
