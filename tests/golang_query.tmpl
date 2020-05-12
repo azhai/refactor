@@ -1,12 +1,11 @@
 {{if not .Target.MultipleFiles}}package {{.Target.NameSpace}}
 
-{{$ilen := len .Imports}}{{if gt $ilen 0 -}}
 import (
 	"time"
 
 	{{range $imp, $al := .Imports}}{{$al}} "{{$imp}}"{{end}}
 )
-{{end -}}{{end -}}
+{{end -}}
 
 {{range .Tables}}
 {{$class := TableMapper .Name -}}

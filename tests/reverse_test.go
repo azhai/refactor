@@ -25,7 +25,7 @@ func init() {
 	if err = createTables(cfg); err != nil {
 		panic(err)
 	}
-	if err = generateModels(cfg); err != nil {
+	if err = refactor.ExecReverseSettings(cfg); err != nil {
 		panic(err)
 	}
 }
@@ -53,24 +53,6 @@ func createTables(cfg config.IReverseSettings) error {
 		_, err = db.ImportFile(testSqlFile)
 	}
 	return err
-}
-
-func generateModels(cfg config.IReverseSettings, names ...string) error {
-	var d *config.DataSource
-	conns := cfg.GetConnConfigMap(names...)
-	for key := range conns {
-		var err error
-		if d, err = getDataSource(cfg, key); err != nil {
-			return err
-		}
-		for _, target := range cfg.GetReverseTargets() {
-			target = target.MergeOptions(d.ConnKey, d.PartConfig)
-			if err := refactor.Reverse(d, &target); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }
 
 func TestReverse(t *testing.T) {

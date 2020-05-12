@@ -3,18 +3,10 @@ package crud_test
 import (
 	"testing"
 
-	"gitea.com/azhai/refactor/tests/models"
+	_ "gitea.com/azhai/refactor/tests/models"
 	"gitea.com/azhai/refactor/tests/models/default"
 	"github.com/stretchr/testify/assert"
 )
-
-var verbose = true
-
-func init() {
-	if c, ok := models.GetConnConfig("default"); ok {
-		db.Initialize(c, verbose)
-	}
-}
 
 func TestInsertRole(t *testing.T) {
 	roles := []map[string]interface{}{

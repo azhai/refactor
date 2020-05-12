@@ -42,6 +42,7 @@ reverse_targets:
       output_dir: "./models"
       template_path: ""
       query_template_path: "./golang_query.tmpl"
+      init_template_path: "./golang_init.tmpl"
       gen_json_tag: true   # 生成JSON标签
       gen_table_name: true # 生成TableName()方法
       gen_query_methods: true # 生成查询方法

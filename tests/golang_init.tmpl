@@ -2,37 +2,36 @@ package models
 
 import (
 	"gitea.com/azhai/refactor/config"
-	"gitea.com/azhai/refactor/tests/models/cache"
-	"gitea.com/azhai/refactor/tests/models/cron"
-	"gitea.com/azhai/refactor/tests/models/default"
+	{{- range $dir, $al := .Imports}}
+	{{if ne $al $dir}}{{$al}} {{end -}}
+	"gitea.com/azhai/refactor/tests/models/{{$dir}}"{{end}}
 )
 
 var (
-	configFile  = "../settings.yml"
-	empty      = config.ConnConfig{}
-	settings   *config.Settings
+	configFile = "../settings.yml"
+	cfg        *config.Settings
+	verbose    bool
 )
 
 func init() {
-	cfg, err := config.ReadSettings(configFile)
+	err := InitSettings(configFile)
 	if err != nil {
 		panic(err)
 	}
-	verbose := cfg.Application.Debug
-	Initialize(cfg, verbose)
-}
-
-// 初始化、连接数据库和缓存
-func Initialize(cfg config.IConnectSettings, verbose bool) {
-	conns := cfg.GetConnConfigMap()
-	for key, c := range conns {
+	confs := cfg.GetConnConfigMap()
+	for key, c := range confs {
 		switch key {
-		case "cache":
-			cache.Connect(c, verbose)
-		case "cron":
-			cron.Connect(c, verbose)
-		case "default":
-			db.Connect(c, verbose)
+		{{- range $dir, $al := .Imports}}
+		case "{{$dir}}":
+			{{$al}}.Initialize(c, verbose){{end}}
 		}
 	}
+}
+
+func InitSettings(fileName string) (err error) {
+	cfg, err = config.ReadSettings(fileName)
+	if err == nil && cfg != nil {
+		verbose = cfg.Application.Debug
+	}
+	return
 }

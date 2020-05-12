@@ -162,7 +162,7 @@ func Reverse(source *config.DataSource, target *config.ReverseTarget) error {
 	if err := tmpl.Execute(buf, data); err != nil {
 		return err
 	}
-	fileName := target.GetFileName(config.CONN_FILE_NAME)
+	fileName := target.GetOutFileName(config.CONN_FILE_NAME)
 	_, err := formatter(fileName, buf.Bytes())
 
 	if target.ApplyMixins {
@@ -230,7 +230,7 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 	var tmplQuery *template.Template
 	if target.QueryTemplatePath != "" {
 		qt, err := ioutil.ReadFile(target.QueryTemplatePath)
-		if err == nil || len(qt) > 0 {
+		if err == nil && len(qt) > 0 {
 			tmplQuery = language.NewTemplate("custom-query", string(qt), funcs)
 		} else {
 			target.GenQueryMethods = false
@@ -277,7 +277,7 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 		if err = tmpl.Execute(buf, data); err != nil {
 			return err
 		}
-		fileName := target.GetFileName(config.SINGLE_FILE_NAME)
+		fileName := target.GetOutFileName(config.SINGLE_FILE_NAME)
 		if _, err = formatter(fileName, buf.Bytes()); err != nil {
 			return err
 		}
@@ -287,7 +287,7 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 			if err = tmplQuery.Execute(buf, data); err != nil {
 				return err
 			}
-			fileName := target.GetFileName(config.QUERY_FILE_NAME)
+			fileName := target.GetOutFileName(config.QUERY_FILE_NAME)
 			if _, err = formatter(fileName, buf.Bytes()); err != nil {
 				return err
 			}
@@ -311,7 +311,7 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 					return err
 				}
 			}
-			fileName := target.GetFileName(table.Name)
+			fileName := target.GetOutFileName(table.Name)
 			if _, err = formatter(fileName, buf.Bytes()); err != nil {
 				return err
 			}
@@ -322,17 +322,43 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 
 func ExecReverseSettings(cfg config.IReverseSettings, names ...string) error {
 	conns := cfg.GetConnConfigMap(names...)
+	targets := cfg.GetReverseTargets()
+	if len(targets) == 0 {
+		return nil
+	}
+	var target config.ReverseTarget
+	imports := make(map[string]string)
 	for key, conf := range conns {
 		d := config.NewDataSource(conf, key)
 		if d.ReverseSource == nil {
 			continue
 		}
-		for _, target := range cfg.GetReverseTargets() {
+		for _, target = range targets {
 			target = target.MergeOptions(d.ConnKey, d.PartConfig)
 			if err := Reverse(d, &target); err != nil {
 				return err
 			}
+			imports[d.ConnKey] = target.NameSpace
 		}
 	}
-	return nil
+	return GenModelInitFile(target, imports)
+}
+
+func GenModelInitFile(target config.ReverseTarget, imports map[string]string) error {
+	if target.InitTemplatePath == "" {
+		return nil
+	}
+	it, err := ioutil.ReadFile(target.InitTemplatePath)
+	if err != nil || len(it) == 0 {
+		return err
+	}
+	tmpl := language.NewTemplate("custom-init", string(it), nil)
+	buf := new(bytes.Buffer)
+	data := map[string]interface{}{"Imports": imports}
+	if err = tmpl.Execute(buf, data); err != nil {
+		return err
+	}
+	fileName := target.GetParentOutFileName(config.INIT_FILE_NAME, 1)
+	_, err = rewrite.CleanImportsWriteGolangFile(fileName, buf.Bytes())
+	return err
 }

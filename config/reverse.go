@@ -46,6 +46,7 @@ type ReverseTarget struct {
 	ColumnMapper      string   `yaml:"column_mapper"`
 	TemplatePath      string   `yaml:"template_path"`
 	QueryTemplatePath string   `yaml:"query_template_path"`
+	InitTemplatePath string    `yaml:"init_template_path"`
 	MultipleFiles     bool     `yaml:"multiple_files"`
 	OutputDir         string   `yaml:"output_dir"`
 	TablePrefix       string   `yaml:"table_prefix"`
@@ -65,9 +66,21 @@ type ReverseTarget struct {
 	MixinNameSpace  string `yaml:"mixin_name_space"`
 }
 
-func (t ReverseTarget) GetFileName(name string) string {
-	_ = os.MkdirAll(t.OutputDir, DEFAULT_DIR_MODE)
-	return filepath.Join(t.OutputDir, name+t.ExtName)
+func (t ReverseTarget) GetFileName(dir, name string) string {
+	_ = os.MkdirAll(dir, DEFAULT_DIR_MODE)
+	return filepath.Join(dir, name+t.ExtName)
+}
+
+func (t ReverseTarget) GetOutFileName(name string) string {
+	return t.GetFileName(t.OutputDir, name)
+}
+
+func (t ReverseTarget) GetParentOutFileName(name string, backward int) string {
+	outDir := t.OutputDir
+	for i := 0; i < backward; i++ {
+		outDir = filepath.Dir(outDir)
+	}
+	return t.GetFileName(outDir, name)
 }
 
 func (t ReverseTarget) MergeOptions(name string, part PartConfig) ReverseTarget {

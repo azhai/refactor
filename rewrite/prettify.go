@@ -24,14 +24,14 @@ func WriteCodeFile(fileName string, sourceCode []byte) ([]byte, error) {
 }
 
 func WriteGolangFile(fileName string, sourceCode []byte) ([]byte, error) {
-	return cleanAndWriteGolangFile(fileName, sourceCode, false)
+	return writeGolangFilePrettify(fileName, sourceCode, false)
 }
 
-func WriteCleanGolangFile(fileName string, sourceCode []byte) ([]byte, error) {
-	return cleanAndWriteGolangFile(fileName, sourceCode, true)
+func CleanImportsWriteGolangFile(fileName string, sourceCode []byte) ([]byte, error) {
+	return writeGolangFilePrettify(fileName, sourceCode, true)
 }
 
-func cleanAndWriteGolangFile(fileName string, sourceCode []byte, cleanImports bool) ([]byte, error) {
+func writeGolangFilePrettify(fileName string, sourceCode []byte, cleanImports bool) ([]byte, error) {
 	// Formart/Prettify the code 格式化代码
 	srcCode, err := FormatGolangCode(sourceCode)
 	if err != nil {

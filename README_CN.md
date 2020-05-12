@@ -181,6 +181,7 @@ reverse_targets:
       multiple_files: false   # 是否生成多个文件
       template_path: ""       # 生成的模板的路径，优先级比 language 中的默认模板高
       query_template_path: "./tests/golang_query.tmpl" # 自定义查询方法模板
+      init_template_path: "./tests/golang_init.tmpl"   # 自定义初始化方法模板
       gen_json_tag: true      # 生成JSON标签
       gen_table_name: true    # 生成TableName()方法
       gen_query_methods: true # 生成查询方法
