@@ -24,7 +24,7 @@ func init() {
 
 // 初始化、连接数据库和缓存
 func Initialize(cfg config.IConnectSettings, verbose bool) {
-	conns := cfg.GetConnections()
+	conns := cfg.GetConnConfigMap()
 	for key, c := range conns {
 		switch key {
 		case "cache":

@@ -16,7 +16,8 @@ const (
 )
 
 type IConnectSettings interface {
-	GetConnections(keys ...string) map[string]ConnConfig
+	GetConnConfigMap(keys ...string) map[string]ConnConfig
+	GetConnConfig(key string) (ConnConfig, bool)
 }
 
 type IReverseSettings interface {
@@ -77,7 +78,7 @@ func (cfg Settings) GetReverseTargets() []ReverseTarget {
 	return cfg.ReverseTargets
 }
 
-func (cfg Settings) GetConnections(keys ...string) map[string]ConnConfig {
+func (cfg Settings) GetConnConfigMap(keys ...string) map[string]ConnConfig {
 	if len(keys) == 0 {
 		return cfg.Connections
 	}
@@ -88,6 +89,22 @@ func (cfg Settings) GetConnections(keys ...string) map[string]ConnConfig {
 		}
 	}
 	return result
+}
+
+func (cfg Settings) GetConnConfig(key string) (ConnConfig, bool) {
+	if c, ok := cfg.Connections[key]; ok {
+		return c, true
+	}
+	return ConnConfig{}, false
+}
+
+func (c ConnConfig) Connect(verbose bool) (*xorm.Engine, error) {
+	d := dialect.GetDialectByName(c.DriverName)
+	engine, err := xorm.NewEngine(d.Name(), d.ParseDSN(c.Params))
+	if err == nil {
+		engine.ShowSQL(verbose)
+	}
+	return engine, err
 }
 
 func NewDataSource(c ConnConfig, name string) *DataSource {
@@ -110,15 +127,6 @@ func (ds *DataSource) Connect(verbose bool) (*xorm.Engine, error) {
 		pp.Println(ds.Database, ds.ConnStr)
 	}
 	engine, err := xorm.NewEngine(ds.Database, ds.ConnStr)
-	if err == nil {
-		engine.ShowSQL(verbose)
-	}
-	return engine, err
-}
-
-func (c ConnConfig) Connect(verbose bool) (*xorm.Engine, error) {
-	d := dialect.GetDialectByName(c.DriverName)
-	engine, err := xorm.NewEngine(d.Name(), d.ParseDSN(c.Params))
 	if err == nil {
 		engine.ShowSQL(verbose)
 	}

@@ -100,6 +100,22 @@ func (cs *CodeSource) DelImport(path, alias string) bool {
 	return astutil.DeleteNamedImport(cs.Fileset, cs.Fileast, alias, path)
 }
 
+func (cs *CodeSource) CleanImports() (removes int) {
+	for _, groups := range astutil.Imports(cs.Fileset, cs.Fileast) {
+		for _, imp := range groups {
+			var path, alias string
+			if imp.Name != nil {
+				alias = imp.Name.Name
+			}
+			path = strings.Trim(imp.Path.Value, "\"")
+			if cs.DelImport(path, alias) {
+				removes++
+			}
+		}
+	}
+	return
+}
+
 func (cs *CodeSource) GetNodeCode(node ast.Node) string {
 	// 请先保证 node 不是 nil
 	pos := cs.Fileset.PositionFor(node.Pos(), false)

@@ -27,15 +27,16 @@ var (
 	formatters   = map[string]language.Formatter{}
 	importters   = map[string]language.Importter{}
 	defaultFuncs = template.FuncMap{
-		"Lower":         strings.ToLower,
-		"Upper":         strings.ToUpper,
-		"Title":         strings.Title,
-		"Camelize":      inflect.Camelize,
-		"Underscore":    inflect.Underscore,
-		"Singularize":   inflect.Singularize,
-		"Pluralize":     inflect.Pluralize,
-		"DiffPluralize": DiffPluralize,
-		"GetSinglePKey": GetSinglePKey,
+		"Lower":            strings.ToLower,
+		"Upper":            strings.ToUpper,
+		"Title":            strings.Title,
+		"Camelize":         inflect.Camelize,
+		"Underscore":       inflect.Underscore,
+		"Singularize":      inflect.Singularize,
+		"Pluralize":        inflect.Pluralize,
+		"DiffPluralize":    DiffPluralize,
+		"GetSinglePKey":    GetSinglePKey,
+		"GetCreatedColumn": GetCreatedColumn,
 	}
 )
 
@@ -48,11 +49,25 @@ func DiffPluralize(word, suffix string) string {
 	return words
 }
 
-func GetSinglePKey(table *schemas.Table) (pkey string) {
+func GetSinglePKey(table *schemas.Table) string {
 	if cols := table.PKColumns(); len(cols) == 1 {
-		pkey = cols[0].FieldName
+		return cols[0].FieldName
 	}
-	return
+	return ""
+}
+
+func GetCreatedColumn(table *schemas.Table) string {
+	for name, ok := range table.Created {
+		if ok {
+			return table.GetColumn(name).Name
+		}
+	}
+	if col := table.GetColumn("created_at"); col != nil {
+		if col.SQLType.IsTime() {
+			return "created_at"
+		}
+	}
+	return ""
 }
 
 func filterTables(tables []*schemas.Table, target *config.ReverseTarget) []*schemas.Table {
@@ -306,7 +321,7 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 }
 
 func ExecReverseSettings(cfg config.IReverseSettings, names ...string) error {
-	conns := cfg.GetConnections(names...)
+	conns := cfg.GetConnConfigMap(names...)
 	for key, conf := range conns {
 		d := config.NewDataSource(conf, key)
 		if d.ReverseSource == nil {

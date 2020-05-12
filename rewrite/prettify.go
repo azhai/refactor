@@ -24,10 +24,27 @@ func WriteCodeFile(fileName string, sourceCode []byte) ([]byte, error) {
 }
 
 func WriteGolangFile(fileName string, sourceCode []byte) ([]byte, error) {
+	return cleanAndWriteGolangFile(fileName, sourceCode, false)
+}
+
+func WriteCleanGolangFile(fileName string, sourceCode []byte) ([]byte, error) {
+	return cleanAndWriteGolangFile(fileName, sourceCode, true)
+}
+
+func cleanAndWriteGolangFile(fileName string, sourceCode []byte, cleanImports bool) ([]byte, error) {
 	// Formart/Prettify the code 格式化代码
 	srcCode, err := FormatGolangCode(sourceCode)
 	if err != nil {
 		return sourceCode, err
+	}
+	if cleanImports { // 清理 import
+		cs := NewCodeSource()
+		cs.SetSource(srcCode)
+		if cs.CleanImports() > 0 {
+			if srcCode, err = cs.GetContent(); err != nil {
+				return srcCode, err
+			}
+		}
 	}
 	if _, err = WriteCodeFile(fileName, srcCode); err != nil {
 		return srcCode, err

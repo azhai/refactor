@@ -19,8 +19,8 @@ require (
 	github.com/stretchr/testify v1.5.1
 	github.com/urfave/cli/v2 v2.2.0
 	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37 // indirect
-	golang.org/x/sys v0.0.0-20200509044756-6aff5f38e54f // indirect
-	golang.org/x/tools v0.0.0-20200509030707-2212a7e161a5
+	golang.org/x/sys v0.0.0-20200511232937-7e40ca221e25 // indirect
+	golang.org/x/tools v0.0.0-20200512001501-aaeff5de670a
 	gopkg.in/yaml.v2 v2.2.8
 	xorm.io/builder v0.3.7
 	xorm.io/xorm v1.0.1
