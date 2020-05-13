@@ -100,7 +100,11 @@ func (cfg Settings) GetConnConfig(key string) (ConnConfig, bool) {
 
 func (c ConnConfig) Connect(verbose bool) (*xorm.Engine, error) {
 	d := dialect.GetDialectByName(c.DriverName)
-	engine, err := xorm.NewEngine(d.Name(), d.ParseDSN(c.Params))
+	drv, dsn := d.Name(), d.ParseDSN(c.Params)
+	if verbose {
+		pp.Printf("Connect: %s %s\n", drv, dsn)
+	}
+	engine, err := xorm.NewEngine(drv, dsn)
 	if err == nil {
 		engine.ShowSQL(verbose)
 	}

@@ -84,7 +84,7 @@ func JoinQuery(engine *xorm.Engine, native, foreign ITableName, fkey, pkey, join
 func LeftJoinQuery(engine *xorm.Engine, native, foreign ITableName, fkey string) *xorm.Session {
 	pkey := "id"
 	if col := GetPrimarykey(engine, foreign); col != nil {
-		pkey = col.FieldName
+		pkey = col.Name
 	}
 	return JoinQuery(engine, native, foreign, fkey, pkey, "LEFT")
 }

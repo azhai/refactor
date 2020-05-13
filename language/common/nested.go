@@ -1,9 +1,10 @@
 package common
 
 import (
-	"xorm.io/builder"
 	"xorm.io/xorm"
 )
+
+var NESTED_EDGE_OFFSET = 2
 
 // 嵌套集合树
 type NestedMixin struct {
@@ -35,13 +36,13 @@ func (n NestedMixin) AncestorsFilter(backward bool) FilterFunc {
 }
 
 // 找出所有子孙节点
-func (n NestedMixin) ChildrenFilter(rank uint8) FilterFunc {
+func (n NestedMixin) ChildrenFilter(rank int) FilterFunc {
 	return func(query *xorm.Session) *xorm.Session {
 		if n.Rgt > 0 && n.Lft > 0 { // 当前不是第0层，即具体某分支以下的节点
 			query = query.Where("rgt < ? AND lft > ?", n.Rgt, n.Lft)
 		}
 		if rank > 0 { // 限制层级
-			query = query.Where("depth < ?", uint8(n.Depth)+rank)
+			query = query.Where("depth < ?", n.Depth+rank)
 		}
 		if rank != 1 { // 多层先按高度排序
 			query = query.OrderBy("depth ASC")
@@ -50,50 +51,52 @@ func (n NestedMixin) ChildrenFilter(rank uint8) FilterFunc {
 	}
 }
 
-// 添加到父节点最末，tbQuery一定要使用db.Table(...)
-func (n *NestedMixin) AddToParent(parent *NestedMixin, tbQuery *xorm.Session) error {
-	query := tbQuery.OrderBy("rgt DESC")
+// 添加到父节点最末
+func (n *NestedMixin) AddToParent(parent *NestedMixin, query *xorm.Session, table string) (err error) {
+	siblQuery := query.Table(table).OrderBy("rgt DESC")
 	if parent == nil {
 		n.Depth = 1
 	} else {
 		n.Depth = parent.Depth + 1
-		query = query.Where("rgt < ? AND lft > ?", parent.Rgt, parent.Lft)
+		siblQuery = siblQuery.Where("rgt < ? AND lft > ?", parent.Rgt, parent.Lft)
 	}
-	query = query.Where("depth = ?", n.Depth)
+	siblQuery = siblQuery.Where("depth = ?", n.Depth)
 	sibling := new(NestedMixin)
-	has, err := query.Get(&sibling)
-	if has == false || err != nil {
-		return err
+	if _, err = siblQuery.Get(sibling); err != nil {
+		return
 	}
+
 	// 重建受影响的左右边界
 	if sibling.Depth > 0 {
 		n.Lft = sibling.Rgt + 1
 	} else if parent != nil {
 		n.Lft = parent.Lft + 1
-		parent.Rgt += 2 // 上面的数据更新使 parent.Rgt 变成脏数据
+		parent.Rgt += NESTED_EDGE_OFFSET // 上面的数据更新使 parent.Rgt 变成脏数据
 	} else {
 		n.Lft = 1
 	}
 	n.Rgt = n.Lft + 1
 	if n.Depth > 1 {
-		err = MoveEdge(tbQuery, uint(n.Lft), "+ 2")
+		err = MoveEdge(query.Table(table), n.Lft, NESTED_EDGE_OFFSET)
 	}
-	return err
+	return
 }
 
 // 左右边界整体移动
-func MoveEdge(query *xorm.Session, base uint, offset string) error {
+func MoveEdge(query *xorm.Session, base, offset int) error {
+	changes := map[string]interface{}{}
 	// 更新右边界
 	query = query.Where("rgt >= ?", base) // 下面的更新lft也要用rgt作为索引
-	affected, err := query.Update("rgt", builder.Expr("rgt "+offset))
+	affected, err := query.Incr("rgt", offset).Update(changes)
 	if affected == 0 || err != nil {
 		return err
 	}
+
 	// 更新左边界，范围一定在上面更新右边界的所有行之内
 	// 要么和上面一起为空，要么比上面少>=n行，n为直系祖先数量
 	if affected > 1 {
 		query = query.Where("lft >= ?", base)
-		_, err = query.Update("lft", builder.Expr("lft "+offset))
+		_, err = query.Incr("lft", offset).Update(changes)
 	}
 	return err
 }

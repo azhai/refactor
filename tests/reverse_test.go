@@ -55,7 +55,7 @@ func createTables(cfg config.IReverseSettings) error {
 	return err
 }
 
-func TestReverse(t *testing.T) {
+func Test01Reverse(t *testing.T) {
 	fileName := "./models/default/models.go"
 	_, err := ioutil.ReadFile(fileName)
 	assert.NoError(t, err)

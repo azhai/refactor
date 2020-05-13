@@ -12,10 +12,11 @@ import (
 	"os"
 	"strings"
 
+	"github.com/azhai/gozzo-utils/filesystem"
+
 	"gitea.com/azhai/refactor/config"
 	"gitea.com/azhai/refactor/language"
 	"gitea.com/azhai/refactor/rewrite"
-	"github.com/azhai/gozzo-utils/filesystem"
 	"github.com/gobwas/glob"
 	"github.com/grsmv/inflect"
 	"xorm.io/xorm"
@@ -70,11 +71,20 @@ func GetCreatedColumn(table *schemas.Table) string {
 	return ""
 }
 
-func filterTables(tables []*schemas.Table, target *config.ReverseTarget) []*schemas.Table {
+func GetTableSchemas(source *config.ReverseSource, target *config.ReverseTarget) []*schemas.Table {
+	orm, err := xorm.NewEngine(source.Database, source.ConnStr)
+	var tableSchemas []*schemas.Table
+	if err == nil {
+		tableSchemas, _ = orm.DBMetas()
+	}
+	return filterTables(tableSchemas, target.IncludeTables, target.ExcludeTables)
+}
+
+func filterTables(tables []*schemas.Table, includes, excludes []string) []*schemas.Table {
 	res := make([]*schemas.Table, 0, len(tables))
 	for _, tb := range tables {
 		var remove bool
-		for _, exclude := range target.ExcludeTables {
+		for _, exclude := range excludes {
 			s, _ := glob.Compile(exclude)
 			remove = s.Match(tb.Name)
 			if remove {
@@ -84,13 +94,13 @@ func filterTables(tables []*schemas.Table, target *config.ReverseTarget) []*sche
 		if remove {
 			continue
 		}
-		if len(target.IncludeTables) == 0 {
+		if len(includes) == 0 {
 			res = append(res, tb)
 			continue
 		}
 
 		var keep bool
-		for _, include := range target.IncludeTables {
+		for _, include := range includes {
 			s, _ := glob.Compile(include)
 			keep = s.Match(tb.Name)
 			if keep {
@@ -123,7 +133,7 @@ func convertMapper(mapname string) names.Mapper {
 	}
 }
 
-func Reverse(source *config.DataSource, target *config.ReverseTarget) error {
+func Reverse(target *config.ReverseTarget, source *config.DataSource) error {
 	formatter := formatters[target.Formatter]
 	lang := language.GetLanguage(target.Language)
 	if lang != nil {
@@ -137,7 +147,8 @@ func Reverse(source *config.DataSource, target *config.ReverseTarget) error {
 	isRedis := true
 	if source.ReverseSource.Database != "redis" {
 		isRedis = false
-		err := RunReverse(source.ReverseSource, target)
+		tableSchemas := GetTableSchemas(source.ReverseSource, target)
+		err := RunReverse(target, tableSchemas)
 		if err != nil {
 			return err
 		}
@@ -166,40 +177,15 @@ func Reverse(source *config.DataSource, target *config.ReverseTarget) error {
 	_, err := formatter(fileName, buf.Bytes())
 
 	if target.ApplyMixins {
-		if target.MixinDirPath != "" {
-			files, _ := filesystem.FindFiles(target.MixinDirPath, ".go")
-			for fileName := range files {
-				if strings.HasSuffix(fileName, "_test.go") {
-					continue
-				}
-				_ = rewrite.AddFormerMixins(fileName, target.MixinNameSpace, "")
-			}
-		}
-		files, _ := filesystem.FindFiles(target.OutputDir, ".go")
-		for fileName := range files {
-			_err := rewrite.ParseAndMixinFile(fileName, true)
-			if _err != nil {
-				err = _err
-			}
+		_err := ExecApplyMixins(target)
+		if _err != nil {
+			err = _err
 		}
 	}
 	return err
 }
 
-func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) error {
-	orm, err := xorm.NewEngine(source.Database, source.ConnStr)
-	if err != nil {
-		return err
-	}
-
-	tableSchemas, err := orm.DBMetas()
-	if err != nil {
-		return err
-	}
-
-	// filter tables according includes and excludes
-	tableSchemas = filterTables(tableSchemas, target)
-
+func RunReverse(target *config.ReverseTarget, tableSchemas []*schemas.Table) error {
 	// load configuration from language
 	lang := language.GetLanguage(target.Language)
 	funcs := newFuncs()
@@ -236,6 +222,7 @@ func RunReverse(source *config.ReverseSource, target *config.ReverseTarget) erro
 			target.GenQueryMethods = false
 		}
 	}
+	var err error
 	if target.TemplatePath != "" {
 		bs, err = ioutil.ReadFile(target.TemplatePath)
 		if err != nil {
@@ -335,7 +322,7 @@ func ExecReverseSettings(cfg config.IReverseSettings, names ...string) error {
 		}
 		for _, target = range targets {
 			target = target.MergeOptions(d.ConnKey, d.PartConfig)
-			if err := Reverse(d, &target); err != nil {
+			if err := Reverse(&target, d); err != nil {
 				return err
 			}
 			imports[d.ConnKey] = target.NameSpace
@@ -360,5 +347,26 @@ func GenModelInitFile(target config.ReverseTarget, imports map[string]string) er
 	}
 	fileName := target.GetParentOutFileName(config.INIT_FILE_NAME, 1)
 	_, err = rewrite.CleanImportsWriteGolangFile(fileName, buf.Bytes())
+	return err
+}
+
+func ExecApplyMixins(target *config.ReverseTarget) error {
+	if target.MixinDirPath != "" {
+		files, _ := filesystem.FindFiles(target.MixinDirPath, ".go")
+		for fileName := range files {
+			if strings.HasSuffix(fileName, "_test.go") {
+				continue
+			}
+			_ = rewrite.AddFormerMixins(fileName, target.MixinNameSpace, "")
+		}
+	}
+	files, _ := filesystem.FindFiles(target.OutputDir, ".go")
+	var err error
+	for fileName := range files {
+		_err := rewrite.ParseAndMixinFile(fileName, true)
+		if _err != nil {
+			err = _err
+		}
+	}
 	return err
 }

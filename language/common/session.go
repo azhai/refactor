@@ -28,7 +28,7 @@ func InitCache(c config.ConnConfig, verbose bool) (*SessionRegistry, error) {
 	d := dialect.GetDialectByName(c.DriverName).(*dialect.Redis)
 	drv, dsn := d.Name(), d.ParseDSN(c.Params)
 	if verbose {
-		pp.Println(drv, dsn, d.Values.Encode())
+		pp.Printf("Connect: %s %s %s\n", drv, dsn, d.Values.Encode())
 	}
 	dial := func() (redis.Conn, error) {
 		return d.Connect()
