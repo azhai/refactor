@@ -3,7 +3,6 @@ package common
 import (
 	"fmt"
 	"reflect"
-	"strings"
 
 	"xorm.io/xorm"
 	"xorm.io/xorm/schemas"
@@ -32,13 +31,23 @@ func GetPrimarykey(engine *xorm.Engine, m interface{}) *schemas.Column {
 }
 
 // 获取Model的字段列表
-func GetColumns(m ITableName) []string {
-	var cols []string
-	table := m.TableName()
-	st := reflect.TypeOf(m)
+func GetColumns(m ITableName, alias string) (cols []string) {
+	var st reflect.Type
+	v := reflect.ValueOf(m)
+	if v.Kind() == reflect.Ptr {
+		st = reflect.Indirect(v).Type()
+	}
+	st = reflect.TypeOf(m)
+
+	if alias == "" {
+		alias = m.TableName()
+	}
 	for i := 0; i < st.NumField(); i++ {
 		t := st.Field(i).Tag.Get("json")
-		cols = append(cols, fmt.Sprintf("`%s`.`%s`", table, t))
+		if t == "" || t == "-" {
+			continue
+		}
+		cols = append(cols, fmt.Sprintf("`%s`.`%s`", alias, t))
 	}
 	return cols
 }
@@ -68,23 +77,4 @@ func Paginate(query *xorm.Session, pageno, pagesize int) *xorm.Session {
 		}
 	}
 	return query.Limit(pagesize, offset)
-}
-
-// 联表查询
-func JoinQuery(engine *xorm.Engine, native, foreign ITableName, fkey, pkey, joinOp string) *xorm.Session {
-	ntvTable, frgTable := native.TableName(), foreign.TableName()
-	cond := Qprintf(engine, "%s.%s = %s.%s", ntvTable, fkey, frgTable, pkey)
-	cols := []string{Qprintf(engine, "%s.*", ntvTable)}
-	cols = append(cols, GetColumns(foreign)...)
-	query := engine.NewSession().Join(joinOp, frgTable, cond)
-	return query.Select(strings.Join(cols, ", "))
-}
-
-// Left Join 联表查询
-func LeftJoinQuery(engine *xorm.Engine, native, foreign ITableName, fkey string) *xorm.Session {
-	pkey := "id"
-	if col := GetPrimarykey(engine, foreign); col != nil {
-		pkey = col.Name
-	}
-	return JoinQuery(engine, native, foreign, fkey, pkey, "LEFT")
 }

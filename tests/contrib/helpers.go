@@ -2,7 +2,10 @@ package contrib
 
 import (
 	"fmt"
+	"strings"
+	"time"
 
+	"gitea.com/azhai/refactor/defines/access"
 	base "gitea.com/azhai/refactor/language/common"
 	"gitea.com/azhai/refactor/tests/models/default"
 )
@@ -26,6 +29,20 @@ func CountRows(tableName string, excludeDeleted bool) int {
 		return -1
 	}
 	return int(total)
+}
+
+// 添加权限
+func AddAccess(role, res string, perm uint16, args ...string) (acc *db.Access, err error) {
+	acc = &db.Access{RoleName: role, ResourceType: res, PermCode: int(perm)}
+	_, names := access.ParsePermNames(uint16(acc.PermCode))
+	acc.Actions = strings.Join(names, ",")
+	if len(args) > 0 {
+		resArgs := strings.Join(args, ",")
+		acc.ResourceArgs = resArgs
+	}
+	acc.GrantedAt = time.Now()
+	_, err = db.Table().InsertOne(acc)
+	return
 }
 
 func NewMenu(path, title, icon string) *db.Menu {
