@@ -3,11 +3,29 @@ package common
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 	"strings"
 
 	"xorm.io/xorm"
 	"xorm.io/xorm/schemas"
 )
+
+// 盲转义
+func BlindlyQuote(engine *xorm.Engine, sep string, words ...string) string {
+	repl := engine.Quote("$1")
+	origin := strings.Join(words, sep)
+	re := regexp.MustCompile("([a-z][a-z0-9_]+)")
+	result := re.ReplaceAllString(origin, repl)
+	if pad := (len(repl) - len("$1")) / 2; pad > 0 {
+		left, right := repl[:pad], repl[len(repl)-pad:]
+		oldnew := []string{
+			left + left, left, right + right, right,
+			"'" + left, "'", left + "'", "'",
+		}
+		result = strings.NewReplacer(oldnew...).Replace(result)
+	}
+	return result
+}
 
 // 对参数先进行转义Quote
 func Qprintf(engine *xorm.Engine, format string, args ...interface{}) string {

@@ -1,6 +1,7 @@
 package common
 
 import (
+	"bytes"
 	"fmt"
 
 	"gitea.com/azhai/refactor/defines/join"
@@ -8,15 +9,17 @@ import (
 )
 
 // 联表查询
-func JoinQuery(engine *xorm.Engine, query *xorm.Session, table, fkey string, foreign ForeignTable) *xorm.Session {
+func JoinQuery(engine *xorm.Engine, query *xorm.Session,
+	table, fkey string, foreign ForeignTable) (*xorm.Session, []string) {
 	frgTable, frgAlias := foreign.TableName(), foreign.AliasName()
 	cond := Qprintf(engine, "%s.%s = %s.%s", table, fkey, frgAlias, foreign.Index)
 	if query == nil {
 		query = engine.Table(table)
 	}
-	query = query.Join(string(foreign.Join), frgTable, cond)
 	var cols []string
-	return query.Cols(GetColumns(foreign.Table, frgAlias, cols)...)
+	cols = GetColumns(foreign.Table, frgAlias, cols)
+	query = query.Join(string(foreign.Join), frgTable, cond)
+	return query, cols
 }
 
 // 关联表
@@ -119,17 +122,20 @@ func (q *LeftJoinQuery) OrderBy(order string) *LeftJoinQuery {
 }
 
 func (q *LeftJoinQuery) GetQuery() *xorm.Session {
-	var cols []string
-	cols = GetColumns(q.Native, q.Native.TableName(), cols)
-	query := q.Session.Clone().Cols(cols...)
+	buf := new(bytes.Buffer)
+	buf.WriteString(Qprintf(q.engine, "%s.*", q.Native.TableName()))
+	query := q.Session.Clone()
 	for _, filter := range q.filters {
 		query = filter(query)
 	}
+	var cols []string
 	for _, fkey := range q.ForeignKeys {
 		foreign := q.Foreigns[fkey]
-		query = JoinQuery(q.engine, query, q.nativeTable, fkey, foreign)
+		query, cols = JoinQuery(q.engine, query, q.nativeTable, fkey, foreign)
+		buf.WriteString(", ")
+		buf.WriteString(BlindlyQuote(q.engine, ", ", cols...))
 	}
-	return query
+	return query.Select(buf.String())
 }
 
 func (q *LeftJoinQuery) Paginate(pageno, pagesize int) *xorm.Session {

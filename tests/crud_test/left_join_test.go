@@ -32,19 +32,27 @@ func TestJoin01FindUserGroups(t *testing.T) {
 	if err == nil && total > 0 {
 		var cols []string
 		cols = base.GetColumns(m.User, m.User.TableName(), cols)
+		query = filter(query).Cols(cols...)
 		if testing.Verbose() {
 			pp.Println(cols)
 		}
-		query = filter(query).Cols(cols...)
 		foreign := base.ForeignTable{
 			Join:  join.LEFT_JOIN,
 			Table: *m.PrinGroup,
 			Alias: "", Index: "gid",
 		}
 		foreign.Alias = "P"
-		query = base.JoinQuery(engine, query, table, "prin_gid", foreign)
+		query, cols = base.JoinQuery(engine, query, table, "prin_gid", foreign)
+		query = query.Cols(cols...)
+		if testing.Verbose() {
+			pp.Println(cols)
+		}
 		foreign.Alias = "V"
-		query = base.JoinQuery(engine, query, table, "vice_gid", foreign)
+		query, cols = base.JoinQuery(engine, query, table, "vice_gid", foreign)
+		query = query.Cols(cols...)
+		if testing.Verbose() {
+			pp.Println(cols)
+		}
 		pageno, pagesize := 1, 20
 		base.Paginate(query, pageno, pagesize).Find(&objs)
 		if testing.Verbose() {
