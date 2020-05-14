@@ -3,6 +3,7 @@ package common
 import (
 	"fmt"
 	"reflect"
+	"strings"
 
 	"xorm.io/xorm"
 	"xorm.io/xorm/schemas"
@@ -30,25 +31,56 @@ func GetPrimarykey(engine *xorm.Engine, m interface{}) *schemas.Column {
 	return nil
 }
 
-// 获取Model的字段列表
-func GetColumns(m ITableName, alias string) (cols []string) {
-	var st reflect.Type
-	v := reflect.ValueOf(m)
-	if v.Kind() == reflect.Ptr {
-		st = reflect.Indirect(v).Type()
-	} else {
-		st = reflect.TypeOf(m)
+func GetIndirectType(v interface{}) (rt reflect.Type) {
+	var ok bool
+	if rt, ok = v.(reflect.Type); !ok {
+		rt = reflect.TypeOf(v)
 	}
+	if rt.Kind() == reflect.Ptr {
+		rt = rt.Elem()
+	}
+	return
+}
 
-	if alias == "" {
-		alias = m.TableName()
+func GetFinalType(v interface{}) (rt reflect.Type) {
+	rt = GetIndirectType(v)
+	for {
+		switch rt.Kind() {
+		default:
+			break
+		case reflect.Ptr, reflect.Chan:
+			rt = rt.Elem()
+		case reflect.Array, reflect.Slice:
+			rt = rt.Elem()
+		case reflect.Map:
+			kk := rt.Key().Kind()
+			if kk == reflect.String || kk <= reflect.Float64 {
+				rt = rt.Elem()
+			} else {
+				break
+			}
+		}
 	}
-	for i := 0; i < st.NumField(); i++ {
-		t := st.Field(i).Tag.Get("json")
+	return
+}
+
+func GetColumns(v interface{}, alias string, cols []string) []string {
+	rt := GetIndirectType(v)
+	if rt.Kind() != reflect.Struct {
+		return cols
+	}
+	for i := 0; i < rt.NumField(); i++ {
+		t := rt.Field(i).Tag.Get("json")
 		if t == "" || t == "-" {
 			continue
+		} else if strings.HasSuffix(t, "inline") {
+			cols = GetColumns(rt.Field(i).Type, alias, cols)
+		} else {
+			if alias != "" {
+				t = fmt.Sprintf("%s.%s", alias, t)
+			}
+			cols = append(cols, t)
 		}
-		cols = append(cols, fmt.Sprintf("%s.%s", alias, t))
 	}
 	return cols
 }

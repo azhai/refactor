@@ -10,7 +10,7 @@ import (
 	utils "github.com/azhai/gozzo-utils/common"
 )
 
-const MODEL_EXTENDS = "`xorm:\"extends\"`"
+const MODEL_EXTENDS = "`json:\",inline\" xorm:\"extends\"`"
 
 var substituteModels = map[string]*ModelSummary{
 	"base.TimeMixin": {

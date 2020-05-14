@@ -3,6 +3,8 @@ package crud_test
 import (
 	"testing"
 
+	"github.com/k0kubun/pp"
+
 	"gitea.com/azhai/refactor/defines/join"
 	base "gitea.com/azhai/refactor/language/common"
 	"gitea.com/azhai/refactor/tests/contrib"
@@ -28,7 +30,11 @@ func TestJoin01FindUserGroups(t *testing.T) {
 	total, err := filter(query).Count()
 	assert.NoError(t, err)
 	if err == nil && total > 0 {
-		cols := base.GetColumns(m.User, "")
+		var cols []string
+		cols = base.GetColumns(m.User, m.User.TableName(), cols)
+		if testing.Verbose() {
+			pp.Println(cols)
+		}
 		query = filter(query).Cols(cols...)
 		foreign := base.ForeignTable{
 			Join:  join.LEFT_JOIN,
@@ -41,6 +47,9 @@ func TestJoin01FindUserGroups(t *testing.T) {
 		query = base.JoinQuery(engine, query, table, "vice_gid", foreign)
 		pageno, pagesize := 1, 20
 		base.Paginate(query, pageno, pagesize).Find(&objs)
+		if testing.Verbose() {
+			pp.Println(objs)
+		}
 	}
 }
 
@@ -61,5 +70,8 @@ func TestJoin02LeftJoinQuery(t *testing.T) {
 
 	query = query.AddFilter(filter).Limit(20)
 	_, err := query.FindAndCount(&objs)
+	if testing.Verbose() {
+		pp.Println(objs)
+	}
 	assert.NoError(t, err)
 }

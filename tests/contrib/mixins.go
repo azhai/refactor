@@ -41,9 +41,9 @@ func NewToken(n byte) string {
 }
 
 type UserWithGroup struct {
-	db.User   `xorm:"extends"`
-	PrinGroup *GroupSummary `xorm:"extends"`
-	ViceGroup *GroupSummary `xorm:"extends"`
+	db.User   `json:",inline" xorm:"extends"`
+	PrinGroup *GroupSummary `json:",inline" xorm:"extends"`
+	ViceGroup *GroupSummary `json:",inline" xorm:"extends"`
 }
 
 type GroupSummary struct {
@@ -56,7 +56,7 @@ func (GroupSummary) TableName() string {
 }
 
 type Permission struct {
-	db.Access `xorm:"extends"`
+	db.Access `json:",inline" xorm:"extends"`
 }
 
 func (p Permission) HasCode(act uint16) bool {

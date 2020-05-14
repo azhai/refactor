@@ -15,7 +15,8 @@ func JoinQuery(engine *xorm.Engine, query *xorm.Session, table, fkey string, for
 		query = engine.Table(table)
 	}
 	query = query.Join(string(foreign.Join), frgTable, cond)
-	return query.Cols(GetColumns(foreign.Table, frgAlias)...)
+	var cols []string
+	return query.Cols(GetColumns(foreign.Table, frgAlias, cols)...)
 }
 
 // 关联表
@@ -118,7 +119,8 @@ func (q *LeftJoinQuery) OrderBy(order string) *LeftJoinQuery {
 }
 
 func (q *LeftJoinQuery) GetQuery() *xorm.Session {
-	cols := GetColumns(q.Native, "")
+	var cols []string
+	cols = GetColumns(q.Native, q.Native.TableName(), cols)
 	query := q.Session.Clone().Cols(cols...)
 	for _, filter := range q.filters {
 		query = filter(query)
