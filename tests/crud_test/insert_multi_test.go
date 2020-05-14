@@ -73,7 +73,7 @@ func insertGroups(t *testing.T, data []map[string]string) map[string]db.Group {
 }
 
 // 插入用户和角色
-func Test01InsertUserRoleGroups(t *testing.T) {
+func TestMulti01InsertUserRoleGroups(t *testing.T) {
 	// 清空
 	u, ur := new(db.User), new(db.UserRole)
 	err := contrib.TruncTable(u.TableName())

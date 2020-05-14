@@ -44,9 +44,10 @@ func (f ForeignTable) TableName() string {
 // Left Join 联表查询
 type LeftJoinQuery struct {
 	engine      *xorm.Engine
-	filter      FilterFunc
+	filters     []FilterFunc
 	nativeTable string
 	Native      ITableName
+	ForeignKeys []string
 	Foreigns    map[string]ForeignTable
 	*xorm.Session
 }
@@ -55,7 +56,7 @@ func NewLeftJoinQuery(engine *xorm.Engine, native ITableName) *LeftJoinQuery {
 	nativeTable := native.TableName()
 	return &LeftJoinQuery{
 		engine:      engine,
-		filter:      nil,
+		filters:     nil,
 		nativeTable: nativeTable,
 		Native:      native,
 		Foreigns:    make(map[string]ForeignTable),
@@ -67,8 +68,13 @@ func (q LeftJoinQuery) Quote(value string) string {
 	return q.engine.Quote(value)
 }
 
-func (q *LeftJoinQuery) SetFilter(filter FilterFunc) *LeftJoinQuery {
-	q.filter = filter
+func (q *LeftJoinQuery) ClearFilters() *LeftJoinQuery {
+	q.filters = make([]FilterFunc, 0)
+	return q
+}
+
+func (q *LeftJoinQuery) AddFilter(filter FilterFunc) *LeftJoinQuery {
+	q.filters = append(q.filters, filter)
 	return q
 }
 
@@ -77,12 +83,16 @@ func (q *LeftJoinQuery) LeftJoin(foreign ITableName, fkey string) *LeftJoinQuery
 	return q
 }
 
-func (q *LeftJoinQuery) AddLeftJoin(foreign ITableName, pkey, fkey, alias string) {
+// 添加次序要和 struct 定义一致
+func (q *LeftJoinQuery) AddLeftJoin(foreign ITableName, pkey, fkey, alias string) *LeftJoinQuery {
 	if pkey == "" {
 		col := GetPrimarykey(q.engine, foreign)
 		if col != nil {
 			pkey = col.Name
 		}
+	}
+	if _, ok := q.Foreigns[fkey]; !ok {
+		q.ForeignKeys = append(q.ForeignKeys, fkey)
 	}
 	q.Foreigns[fkey] = ForeignTable{
 		Join:  join.LEFT_JOIN,
@@ -90,15 +100,31 @@ func (q *LeftJoinQuery) AddLeftJoin(foreign ITableName, pkey, fkey, alias string
 		Alias: alias,
 		Index: pkey,
 	}
+	return q
+}
+
+func (q *LeftJoinQuery) Limit(limit int, start ...int) *LeftJoinQuery {
+	q.AddFilter(func(query *xorm.Session) *xorm.Session {
+		return query.Limit(limit, start...)
+	})
+	return q
+}
+
+func (q *LeftJoinQuery) OrderBy(order string) *LeftJoinQuery {
+	q.AddFilter(func(query *xorm.Session) *xorm.Session {
+		return query.OrderBy(order)
+	})
+	return q
 }
 
 func (q *LeftJoinQuery) GetQuery() *xorm.Session {
 	cols := GetColumns(q.Native, "")
 	query := q.Session.Clone().Cols(cols...)
-	if q.filter != nil {
-		query = q.filter(query)
+	for _, filter := range q.filters {
+		query = filter(query)
 	}
-	for fkey, foreign := range q.Foreigns {
+	for _, fkey := range q.ForeignKeys {
+		foreign := q.Foreigns[fkey]
 		query = JoinQuery(q.engine, query, q.nativeTable, fkey, foreign)
 	}
 	return query
@@ -109,10 +135,11 @@ func (q *LeftJoinQuery) Paginate(pageno, pagesize int) *xorm.Session {
 }
 
 func (q *LeftJoinQuery) Count(bean ...interface{}) (int64, error) {
-	if q.filter != nil {
-		q.Session = q.filter(q.Session)
+	query := q.Session.Clone()
+	for _, filter := range q.filters {
+		query = filter(query)
 	}
-	return q.Session.Count(bean...)
+	return query.Count(bean...)
 }
 
 func (q *LeftJoinQuery) FindAndCount(rowsSlicePtr interface{}, condiBean ...interface{}) (int64, error) {

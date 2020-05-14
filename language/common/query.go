@@ -36,8 +36,9 @@ func GetColumns(m ITableName, alias string) (cols []string) {
 	v := reflect.ValueOf(m)
 	if v.Kind() == reflect.Ptr {
 		st = reflect.Indirect(v).Type()
+	} else {
+		st = reflect.TypeOf(m)
 	}
-	st = reflect.TypeOf(m)
 
 	if alias == "" {
 		alias = m.TableName()
@@ -47,7 +48,7 @@ func GetColumns(m ITableName, alias string) (cols []string) {
 		if t == "" || t == "-" {
 			continue
 		}
-		cols = append(cols, fmt.Sprintf("`%s`.`%s`", alias, t))
+		cols = append(cols, fmt.Sprintf("%s.%s", alias, t))
 	}
 	return cols
 }

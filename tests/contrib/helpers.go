@@ -31,20 +31,6 @@ func CountRows(tableName string, excludeDeleted bool) int {
 	return int(total)
 }
 
-// 添加权限
-func AddAccess(role, res string, perm uint16, args ...string) (acc *db.Access, err error) {
-	acc = &db.Access{RoleName: role, ResourceType: res, PermCode: int(perm)}
-	_, names := access.ParsePermNames(uint16(acc.PermCode))
-	acc.Actions = strings.Join(names, ",")
-	if len(args) > 0 {
-		resArgs := strings.Join(args, ",")
-		acc.ResourceArgs = resArgs
-	}
-	acc.GrantedAt = time.Now()
-	_, err = db.Table().InsertOne(acc)
-	return
-}
-
 func NewMenu(path, title, icon string) *db.Menu {
 	return &db.Menu{
 		Path: path, Title: title, Icon: icon,
@@ -65,5 +51,21 @@ func AddMenuToParent(menu, parent *db.Menu) (err error) {
 	if err == nil {
 		_, err = query.InsertOne(menu)
 	}
+	return
+}
+
+// 添加权限
+func AddAccess(role, res string, perm uint16, args ...string) (acc *db.Access, err error) {
+	acc = &db.Access{
+		RoleName: role, PermCode: int(perm),
+		ResourceType: res, GrantedAt: time.Now(),
+	}
+	_, names := access.ParsePermNames(uint16(acc.PermCode))
+	acc.Actions = strings.Join(names, ",")
+	if len(args) > 0 {
+		resArgs := strings.Join(args, ",")
+		acc.ResourceArgs = resArgs
+	}
+	_, err = db.Table().InsertOne(acc)
 	return
 }

@@ -25,7 +25,7 @@ var allMenuData = []map[string]string{
 }
 
 // 添加菜单
-func Test01InsertMenus(t *testing.T) {
+func TestNested01InsertMenus(t *testing.T) {
 	parent := new(db.Menu)
 	err := contrib.TruncTable(parent.TableName())
 	assert.NoError(t, err)
@@ -44,7 +44,7 @@ func Test01InsertMenus(t *testing.T) {
 }
 
 // 查找祖先菜单
-func Test02FindAncestors(t *testing.T) {
+func TestNested02FindAncestors(t *testing.T) {
 	menu := new(db.Menu)
 	_, err := menu.Load("path = ?", "inline-edit-table")
 	assert.NoError(t, err)
@@ -58,7 +58,7 @@ func Test02FindAncestors(t *testing.T) {
 }
 
 // 查找子菜单
-func Test03FindChildren(t *testing.T) {
+func TestNested03FindChildren(t *testing.T) {
 	menu := new(db.Menu)
 	_, err := menu.Load("path = ?", "/excel")
 	assert.NoError(t, err)

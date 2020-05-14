@@ -2,8 +2,10 @@ package contrib
 
 import (
 	"encoding/hex"
+	"strings"
 	"time"
 
+	"gitea.com/azhai/refactor/defines/access"
 	db "gitea.com/azhai/refactor/tests/models/default"
 	"github.com/azhai/gozzo-utils/cryptogy"
 	"github.com/muyo/sno"
@@ -44,10 +46,6 @@ type UserWithGroup struct {
 	ViceGroup *GroupSummary `xorm:"extends"`
 }
 
-func (UserWithGroup) TableName() string {
-	return "t_user"
-}
-
 type GroupSummary struct {
 	Title  string `json:"title" xorm:"notnull default '' comment('名称') VARCHAR(50)"`
 	Remark string `json:"remark" xorm:"comment('说明备注') TEXT"`
@@ -55,4 +53,23 @@ type GroupSummary struct {
 
 func (GroupSummary) TableName() string {
 	return "t_group"
+}
+
+type Permission struct {
+	db.Access `xorm:"extends"`
+}
+
+func (p Permission) HasCode(act uint16) bool {
+	code := uint16(p.PermCode)
+	return code == access.ALL || code&act == act
+}
+
+func (p Permission) CheckPerm(act uint16, url string) bool {
+	if !p.RevokedAt.IsZero() || p.RoleName == "" || p.PermCode == 0 {
+		return false
+	}
+	if p.ResourceArgs != "*" && !strings.HasPrefix(url, p.ResourceArgs) {
+		return false
+	}
+	return p.HasCode(act)
 }

@@ -17,7 +17,7 @@ var allRoleData = []map[string]interface{}{
 }
 
 // 插入三个角色
-func Test01InsertRoles(t *testing.T) {
+func TestSingle01InsertRoles(t *testing.T) {
 	m := new(db.Role)
 	err := contrib.TruncTable(m.TableName())
 	assert.NoError(t, err)
@@ -29,7 +29,7 @@ func Test01InsertRoles(t *testing.T) {
 }
 
 // 软删除第二个角色
-func Test02SoftDeleteRole(t *testing.T) {
+func TestSingle02SoftDeleteRole(t *testing.T) {
 	m := &db.Role{Id: 2}
 	table := m.TableName()
 	assert.Equal(t, contrib.CountRows(table, true), 3)

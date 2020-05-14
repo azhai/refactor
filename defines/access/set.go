@@ -1,5 +1,11 @@
 package access
 
+import (
+	"sort"
+
+	"github.com/k0kubun/pp"
+)
+
 // 操作列表
 const (
 	VIEW uint16 = 2 << iota
@@ -10,9 +16,27 @@ const (
 	GET
 	POST
 	GRANT
-	ALL
-	NONE uint16 = 0 // 无权限
+	ALL         = ^uint16(0) // 65535
+	NONE uint16 = 0          // 无权限
 )
+
+var verbose = false
+
+func init() {
+	if !verbose {
+		return
+	}
+	// 测试操作列表具体数值
+	var codes []int
+	for c := range AccessTitles {
+		codes = append(codes, int(c))
+	}
+	sort.Ints(codes)
+	for _, cc := range codes {
+		c := uint16(cc)
+		pp.Println(c, cc, AccessTitles[c])
+	}
+}
 
 var (
 	AccessNames = map[uint16]string{
@@ -29,6 +53,13 @@ var (
 
 // 分解出具体权限
 func ParsePermNames(perm uint16) (codes []uint16, names []string) {
+	if perm == NONE {
+		return
+	} else if perm == ALL {
+		codes = append(codes, ALL)
+		names = append(names, AccessNames[ALL])
+		return
+	}
 	for code, name := range AccessNames {
 		if code > 0 && perm&code == code {
 			codes = append(codes, code)
