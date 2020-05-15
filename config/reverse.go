@@ -47,6 +47,7 @@ type ReverseTarget struct {
 	TemplatePath      string   `yaml:"template_path"`
 	QueryTemplatePath string   `yaml:"query_template_path"`
 	InitTemplatePath  string   `yaml:"init_template_path"`
+	InitNameSpace     string   `yaml:"init_name_space"`
 	MultipleFiles     bool     `yaml:"multiple_files"`
 	OutputDir         string   `yaml:"output_dir"`
 	TablePrefix       string   `yaml:"table_prefix"`

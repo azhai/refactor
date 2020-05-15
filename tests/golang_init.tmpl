@@ -1,10 +1,11 @@
 package models
 
+{{$initns := .Target.InitNameSpace -}}
 import (
 	"gitea.com/azhai/refactor/config"
 	{{- range $dir, $al := .Imports}}
 	{{if ne $al $dir}}{{$al}} {{end -}}
-	"gitea.com/azhai/refactor/tests/models/{{$dir}}"{{end}}
+	"{{$initns}}/{{$dir}}"{{end}}
 )
 
 var (

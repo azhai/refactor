@@ -221,6 +221,8 @@ func RunReverse(target *config.ReverseTarget, tableSchemas []*schemas.Table) err
 		} else {
 			target.GenQueryMethods = false
 		}
+	} else {
+		tmplQuery = language.GetGolangTemplate("query", funcs)
 	}
 	var err error
 	if target.TemplatePath != "" {
@@ -332,21 +334,26 @@ func ExecReverseSettings(cfg config.IReverseSettings, names ...string) error {
 }
 
 func GenModelInitFile(target config.ReverseTarget, imports map[string]string) error {
-	if target.InitTemplatePath == "" {
-		return nil
+	var tmpl *template.Template
+	if target.InitTemplatePath != "" {
+		it, err := ioutil.ReadFile(target.InitTemplatePath)
+		if err != nil || len(it) == 0 {
+			return err
+		}
+		tmpl = language.NewTemplate("custom-init", string(it), nil)
+	} else {
+		tmpl = language.GetGolangTemplate("init", nil)
 	}
-	it, err := ioutil.ReadFile(target.InitTemplatePath)
-	if err != nil || len(it) == 0 {
-		return err
-	}
-	tmpl := language.NewTemplate("custom-init", string(it), nil)
 	buf := new(bytes.Buffer)
-	data := map[string]interface{}{"Imports": imports}
-	if err = tmpl.Execute(buf, data); err != nil {
+	data := map[string]interface{}{
+		"Target":  target,
+		"Imports": imports,
+	}
+	if err := tmpl.Execute(buf, data); err != nil {
 		return err
 	}
 	fileName := target.GetParentOutFileName(config.INIT_FILE_NAME, 1)
-	_, err = rewrite.CleanImportsWriteGolangFile(fileName, buf.Bytes())
+	_, err := rewrite.CleanImportsWriteGolangFile(fileName, buf.Bytes())
 	return err
 }
 

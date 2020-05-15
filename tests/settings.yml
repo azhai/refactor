@@ -41,8 +41,9 @@ reverse_targets:
       multiple_files: false
       output_dir: "./models"
       template_path: ""
-      query_template_path: "./golang_query.tmpl"
+      query_template_path: ""
       init_template_path: "./golang_init.tmpl"
+      init_name_space: "gitea.com/azhai/refactor/tests/models"
       gen_json_tag: true   # 生成JSON标签
       gen_table_name: true # 生成TableName()方法
       gen_query_methods: true # 生成查询方法

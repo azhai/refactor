@@ -31,6 +31,48 @@ func ({{$class}}) TableName() string {
 {{end}}
 `, "`", "`")
 
+	golangCacheTemplate = `package {{.Target.NameSpace}}
+
+import (
+	"gitea.com/azhai/refactor/config"
+	base "gitea.com/azhai/refactor/language/common"
+)
+
+var (
+	sessreg *base.SessionRegistry
+)
+
+// 初始化、连接数据库和缓存
+func Initialize(c config.ConnConfig, verbose bool) {
+	var err error
+	sessreg, err = base.InitCache(c, verbose)
+	if err != nil {
+		panic(err)
+	}
+}
+
+// 获得当前会话管理器
+func Registry() *base.SessionRegistry {
+	return sessreg
+}
+
+// 获得用户会话
+func Session(token string) *base.Session {
+	if sessreg == nil {
+		return nil
+	}
+	return sessreg.GetSession(token)
+}
+
+// 删除会话
+func DelSession(token string) bool {
+	if sessreg == nil {
+		return false
+	}
+	return sessreg.DelSession(token)
+}
+`
+
 	golangConnTemplate = `package {{.Target.NameSpace}}
 
 import (
@@ -106,46 +148,77 @@ func QueryAll(filter base.FilterFunc, pages ...int) *xorm.Session {
 }
 `
 
-	golangCacheTemplate = `package {{.Target.NameSpace}}
+	golangInitTemplate = `package models
 
+{{$initns := .Target.InitNameSpace -}}
 import (
 	"gitea.com/azhai/refactor/config"
-	base "gitea.com/azhai/refactor/language/common"
+	{{- range $dir, $al := .Imports}}
+	{{if ne $al $dir}}{{$al}} {{end -}}
+	"{{$initns}}/{{$dir}}"{{end}}
 )
 
 var (
-	sessreg *base.SessionRegistry
+	configFile = "./settings.yml"
+	cfg        *config.Settings
+	verbose    bool
 )
 
-// 初始化、连接数据库和缓存
-func Initialize(c config.ConnConfig, verbose bool) {
-	var err error
-	sessreg, err = base.InitCache(c, verbose)
+func init() {
+	err := InitSettings(configFile)
 	if err != nil {
 		panic(err)
 	}
-}
-
-// 获得当前会话管理器
-func Registry() *base.SessionRegistry {
-	return sessreg
-}
-
-// 获得用户会话
-func Session(token string) *base.Session {
-	if sessreg == nil {
-		return nil
+	confs := cfg.GetConnConfigMap()
+	for key, c := range confs {
+		switch key {
+		{{- range $dir, $al := .Imports}}
+		case "{{$dir}}":
+			{{$al}}.Initialize(c, verbose){{end}}
+		}
 	}
-	return sessreg.GetSession(token)
 }
 
-// 删除会话
-func DelSession(token string) bool {
-	if sessreg == nil {
-		return false
+func InitSettings(fileName string) (err error) {
+	cfg, err = config.ReadSettings(fileName)
+	if err == nil && cfg != nil {
+		verbose = cfg.Application.Debug
 	}
-	return sessreg.DelSession(token)
+	return
 }
+`
+
+	golangQueryTemplate = `{{if not .Target.MultipleFiles}}package {{.Target.NameSpace}}
+
+import (
+	"time"
+
+	{{range $imp, $al := .Imports}}{{$al}} "{{$imp}}"{{end}}
+)
+{{end -}}
+
+{{range .Tables}}
+{{$class := TableMapper .Name -}}
+{{$pkey := GetSinglePKey . -}}
+{{$created := GetCreatedColumn . -}}
+func (m *{{$class}}) Load(where interface{}, args ...interface{}) (bool, error) {
+	return Table().Where(where, args...).Get(m)
+}
+
+{{if ne $pkey "" -}}
+func (m *{{$class}}) Save(changes map[string]interface{}) error {
+	return ExecTx(func(tx *xorm.Session) (int64, error) {
+		if changes == nil || m.{{$pkey}} == 0 {
+			{{if ne $created "" -}}changes["{{$created}}"] = time.Now()
+			{{else}}{{end -}}
+			return tx.Table(m).Insert(changes)
+		} else {
+			return tx.Table(m).ID(m.{{$pkey}}).Update(changes)
+		}
+	})
+}
+{{end -}}
+{{end -}}
 `
 )
 
@@ -156,6 +229,10 @@ func GetGolangTemplate(name string, funcs template.FuncMap) *template.Template {
 		name, content = "cache", golangCacheTemplate
 	case "conn":
 		name, content = "conn", golangConnTemplate
+	case "init":
+		name, content = "init", golangInitTemplate
+	case "query":
+		name, content = "query", golangQueryTemplate
 	default:
 		name, content = "model", golangModelTemplate
 	}
