@@ -36,6 +36,8 @@ func ({{$class}}) TableName() string {
 import (
 	"gitea.com/azhai/refactor/config"
 	base "gitea.com/azhai/refactor/language/common"
+	"github.com/azhai/gozzo-utils/redisw"
+	"github.com/gomodule/redigo/redis"
 )
 
 var (
@@ -43,12 +45,12 @@ var (
 )
 
 // 初始化、连接数据库和缓存
-func Initialize(c config.ConnConfig, verbose bool) {
-	var err error
-	sessreg, err = base.InitCache(c, verbose)
-	if err != nil {
-		panic(err)
+func Initialize(r *config.ReverseSource, verbose bool) {
+	d := config.ReverseSource2RedisDialect(r)
+	dial := func() (redis.Conn, error) {
+		return d.Connect(verbose)
 	}
+	sessreg = base.NewRegistry(redisw.NewRedisPool(dial, -1))
 }
 
 // 获得当前会话管理器
@@ -87,9 +89,9 @@ var (
 )
 
 // 初始化、连接数据库和缓存
-func Initialize(c config.ConnConfig, verbose bool) {
+func Initialize(r *config.ReverseSource, verbose bool) {
 	var err error
-	engine, err = c.Connect(verbose)
+	engine, err = r.Connect(verbose)
 	if err != nil {
 		panic(err)
 	}
@@ -153,6 +155,7 @@ func QueryAll(filter base.FilterFunc, pages ...int) *xorm.Session {
 {{$initns := .Target.InitNameSpace -}}
 import (
 	"gitea.com/azhai/refactor/config"
+	"gitea.com/azhai/refactor/config/dialect"
 	{{- range $dir, $al := .Imports}}
 	{{if ne $al $dir}}{{$al}} {{end -}}
 	"{{$initns}}/{{$dir}}"{{end}}
@@ -160,31 +163,32 @@ import (
 
 var (
 	configFile = "./settings.yml"
-	cfg        *config.Settings
+	settings   *config.Settings
 	verbose    bool
 )
 
 func init() {
-	err := InitSettings(configFile)
+	settings, err := config.ReadSettings(configFile)
 	if err != nil {
 		panic(err)
 	}
-	confs := cfg.GetConnConfigMap()
+	verbose = settings.Application.Debug
+	ConnectDatabases(settings.GetConnConfigMap())
+}
+
+func Verbose() bool {
+	return verbose
+}
+
+func ConnectDatabases(confs map[string]config.ConnConfig) {
 	for key, c := range confs {
+		r, _ := config.NewReverseSource(c)
 		switch key {
 		{{- range $dir, $al := .Imports}}
 		case "{{$dir}}":
-			{{$al}}.Initialize(c, verbose){{end}}
+			{{$al}}.Initialize(r, verbose){{end}}
 		}
 	}
-}
-
-func InitSettings(fileName string) (err error) {
-	cfg, err = config.ReadSettings(fileName)
-	if err == nil && cfg != nil {
-		verbose = cfg.Application.Debug
-	}
-	return
 }
 `
 

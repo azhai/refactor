@@ -4,12 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"gitea.com/azhai/refactor/config"
-	"gitea.com/azhai/refactor/config/dialect"
 	utils "github.com/azhai/gozzo-utils/common"
 	"github.com/azhai/gozzo-utils/redisw"
 	"github.com/gomodule/redigo/redis"
-	"github.com/k0kubun/pp"
 )
 
 const (
@@ -20,22 +17,6 @@ const (
 	SESS_TIMEOUT    = 7200   // 会话缓存时间
 	SESS_LIST_SEP   = ";"    // 角色名之间的分隔符
 )
-
-func InitCache(c config.ConnConfig, verbose bool) (*SessionRegistry, error) {
-	if c.DriverName != "redis" {
-		return nil, nil
-	}
-	d := dialect.GetDialectByName(c.DriverName).(*dialect.Redis)
-	drv, dsn := d.Name(), d.ParseDSN(c.Params)
-	if verbose {
-		pp.Printf("Connect: %s %s %s\n", drv, dsn, d.Values.Encode())
-	}
-	dial := func() (redis.Conn, error) {
-		return d.Connect()
-	}
-	sessreg := NewRegistry(redisw.NewRedisPool(dial, -1))
-	return sessreg, nil
-}
 
 func SessListJoin(data []string) string {
 	return strings.Join(data, SESS_LIST_SEP)

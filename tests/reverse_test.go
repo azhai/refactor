@@ -8,6 +8,7 @@ import (
 	"gitea.com/azhai/refactor"
 	"gitea.com/azhai/refactor/config"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/k0kubun/pp"
 	"github.com/stretchr/testify/assert"
 	"xorm.io/xorm"
 )
@@ -16,19 +17,6 @@ var (
 	configFile  = "./settings.yml"
 	testSqlFile = "./mysql_test.sql"
 )
-
-func init() {
-	cfg, err := config.ReadSettings(configFile)
-	if err != nil {
-		panic(err)
-	}
-	if err = createTables(cfg); err != nil {
-		panic(err)
-	}
-	if err = refactor.ExecReverseSettings(cfg); err != nil {
-		panic(err)
-	}
-}
 
 func getDataSource(cfg config.IReverseSettings, name string) (*config.DataSource, error) {
 	if c, ok := cfg.GetConnConfig(name); ok {
@@ -55,7 +43,17 @@ func createTables(cfg config.IReverseSettings) error {
 	return err
 }
 
-func Test01Reverse(t *testing.T) {
+func Test01CreateTables(t *testing.T) {
+	cfg, err := config.ReadSettings(configFile)
+	pp.Println(cfg)
+	assert.NoError(t, err)
+	err = createTables(cfg)
+	assert.NoError(t, err)
+	err = refactor.ExecReverseSettings(cfg)
+	assert.NoError(t, err)
+}
+
+func Test02Reverse(t *testing.T) {
 	fileName := "./models/default/models.go"
 	_, err := ioutil.ReadFile(fileName)
 	assert.NoError(t, err)

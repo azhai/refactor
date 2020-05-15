@@ -5,8 +5,12 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/k0kubun/pp"
+	"xorm.io/xorm"
 )
 
 const ( // 约定大于配置
@@ -35,6 +39,20 @@ type ReverseConfig struct {
 type ReverseSource struct {
 	Database string `yaml:"database"`
 	ConnStr  string `yaml:"conn_str"`
+	OptStr   string `yaml:"opt_str"`
+}
+
+func (r ReverseSource) Connect(verbose bool) (*xorm.Engine, error) {
+	if r.Database == "" || r.ConnStr == "" {
+		return nil, fmt.Errorf("the config of connection is empty")
+	} else if verbose {
+		pp.Println(r.Database, r.ConnStr)
+	}
+	engine, err := xorm.NewEngine(r.Database, r.ConnStr)
+	if err == nil {
+		engine.ShowSQL(verbose)
+	}
+	return engine, err
 }
 
 // ReverseTarget represents a reverse target

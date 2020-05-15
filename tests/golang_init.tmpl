@@ -3,6 +3,7 @@ package models
 {{$initns := .Target.InitNameSpace -}}
 import (
 	"gitea.com/azhai/refactor/config"
+	"gitea.com/azhai/refactor/config/dialect"
 	{{- range $dir, $al := .Imports}}
 	{{if ne $al $dir}}{{$al}} {{end -}}
 	"{{$initns}}/{{$dir}}"{{end}}
@@ -10,29 +11,30 @@ import (
 
 var (
 	configFile = "../settings.yml"
-	cfg        *config.Settings
+	settings   *config.Settings
 	verbose    bool
 )
 
 func init() {
-	err := InitSettings(configFile)
+	settings, err := config.ReadSettings(configFile)
 	if err != nil {
 		panic(err)
 	}
-	confs := cfg.GetConnConfigMap()
-	for key, c := range confs {
-		switch key {
-		{{- range $dir, $al := .Imports}}
-		case "{{$dir}}":
-			{{$al}}.Initialize(c, verbose){{end}}
-		}
-	}
+	verbose = settings.Application.Debug
+	ConnectDatabases(settings.GetConnConfigMap())
 }
 
-func InitSettings(fileName string) (err error) {
-	cfg, err = config.ReadSettings(fileName)
-	if err == nil && cfg != nil {
-		verbose = cfg.Application.Debug
+func Verbose() bool {
+	return verbose
+}
+
+func ConnectDatabases(confs map[string]config.ConnConfig) {
+	for key, c := range confs {
+		r, _ := config.NewReverseSource(c)
+		switch key {
+		{{- range $dir, $al := .Imports}}
+			case "{{$dir}}":
+			{{$al}}.Initialize(r, verbose){{end}}
+		}
 	}
-	return
 }

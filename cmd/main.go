@@ -13,7 +13,22 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-const VERSION = "0.9.4"
+const VERSION = "0.9.5"
+
+func main() {
+	app := &cli.App{
+		Name:      "reverse",
+		Version:   VERSION,
+		Usage:     "Reverse is a database reverse command line tool",
+		UsageText: "reverse [global options] [arguments...]",
+		Flags:     ReverseFlags,
+		Action:    ReverseAction,
+	}
+
+	if err := app.Run(os.Args); err != nil {
+		panic(err)
+	}
+}
 
 var ReverseFlags = []cli.Flag{
 	&cli.StringFlag{
@@ -33,22 +48,6 @@ func ReverseAction(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-
 	names := ctx.Args().Slice()
 	return refactor.ExecReverseSettings(cfg, names...)
-}
-
-func main() {
-	app := &cli.App{
-		Name:      "reverse",
-		Version:   VERSION,
-		Usage:     "Reverse is a database reverse command line tool",
-		UsageText: "reverse [global options] [arguments...]",
-		Flags:     ReverseFlags,
-		Action:    ReverseAction,
-	}
-
-	if err := app.Run(os.Args); err != nil {
-		panic(err)
-	}
 }

@@ -1,13 +1,11 @@
 package config
 
 import (
-	"fmt"
+	"bytes"
 	"os"
 
 	"gitea.com/azhai/refactor/config/dialect"
-	"github.com/k0kubun/pp"
 	"gopkg.in/yaml.v2"
-	"xorm.io/xorm"
 )
 
 const (
@@ -23,12 +21,6 @@ type IConnectSettings interface {
 type IReverseSettings interface {
 	GetReverseTargets() []ReverseTarget
 	IConnectSettings
-}
-
-type Settings struct {
-	Application    AppConfig             `json:"application" yaml:"application"`
-	Connections    map[string]ConnConfig `json:"connections" yaml:"connections"`
-	ReverseTargets []ReverseTarget       `json:"reverse_targets" yaml:"reverse_targets"`
 }
 
 type AppConfig struct {
@@ -49,29 +41,86 @@ type ConnConfig struct {
 	PartConfig `json:",inline" yaml:",inline"` // 注意逗号不能少
 }
 
+func NewReverseSource(c ConnConfig) (*ReverseSource, dialect.Dialect) {
+	d := dialect.GetDialectByName(c.DriverName)
+	r := &ReverseSource {
+		Database: d.Name(), // 其实也等于 c.DriverName
+		ConnStr:  d.ParseDSN(c.Params),
+	}
+	if dr, ok := d.(*dialect.Redis); ok {
+		r.OptStr = dr.Values.Encode()
+	}
+	return r, d
+}
+
+func ReverseSource2RedisDialect(r *ReverseSource) *dialect.Redis {
+	d, err := dialect.NewRedis(r.ConnStr, "")
+	if err != nil || r.Database != d.Name() {
+		return nil
+	}
+	_ = d.ParseOptions(r.OptStr)
+	return d
+}
+
 type DataSource struct {
 	ConnKey      string
 	ImporterPath string
-	Dialect      dialect.Dialect
 	PartConfig
 	*ReverseSource
 }
 
+func NewDataSource(c ConnConfig, name string) *DataSource {
+	ds := &DataSource{ConnKey: name, PartConfig: c.PartConfig}
+	var d dialect.Dialect
+	ds.ReverseSource, d = NewReverseSource(c)
+	if d != nil {
+		ds.ImporterPath = d.ImporterPath()
+	}
+	return ds
+}
+
+func (ds DataSource) GetDriverName() string {
+	if ds.ReverseSource != nil {
+		return ds.ReverseSource.Database
+	}
+	return ""
+}
+
+type Settings struct {
+	Application    AppConfig             `json:"application" yaml:"application"`
+	Connections    map[string]ConnConfig `json:"connections" yaml:"connections"`
+	ReverseTargets []ReverseTarget       `json:"reverse_targets" yaml:"reverse_targets"`
+}
+
 func ReadSettings(fileName string) (*Settings, error) {
 	cfg := new(Settings)
-	rd, err := os.Open(fileName)
-	if err == nil {
-		err = yaml.NewDecoder(rd).Decode(&cfg)
-	}
+	err := ReadSettingsFrom(fileName, &cfg)
 	return cfg, err
 }
 
-func SaveSettings(fileName string, cfg interface{}) error {
+func ReadSettingsFrom(fileName string, cfg interface{}) error {
+	rd, err := os.Open(fileName)
+	if err == nil {
+		err = yaml.NewDecoder(rd).Decode(cfg)
+	}
+	return err
+}
+
+func SaveSettingsTo(fileName string, cfg interface{}) error {
 	wt, err := os.Open(fileName)
 	if err == nil {
 		err = yaml.NewEncoder(wt).Encode(cfg)
 	}
 	return err
+}
+
+func Settings2String(cfg interface{}) []byte {
+	buf := new(bytes.Buffer)
+	err := yaml.NewEncoder(buf).Encode(cfg)
+	if err == nil {
+		return buf.Bytes()
+	}
+	return nil
 }
 
 func (cfg Settings) GetReverseTargets() []ReverseTarget {
@@ -96,43 +145,4 @@ func (cfg Settings) GetConnConfig(key string) (ConnConfig, bool) {
 		return c, true
 	}
 	return ConnConfig{}, false
-}
-
-func (c ConnConfig) Connect(verbose bool) (*xorm.Engine, error) {
-	d := dialect.GetDialectByName(c.DriverName)
-	drv, dsn := d.Name(), d.ParseDSN(c.Params)
-	if verbose {
-		pp.Printf("Connect: %s %s\n", drv, dsn)
-	}
-	engine, err := xorm.NewEngine(drv, dsn)
-	if err == nil {
-		engine.ShowSQL(verbose)
-	}
-	return engine, err
-}
-
-func NewDataSource(c ConnConfig, name string) *DataSource {
-	d := &DataSource{ConnKey: name, PartConfig: c.PartConfig}
-	d.Dialect = dialect.GetDialectByName(c.DriverName)
-	if d.Dialect != nil {
-		d.ImporterPath = d.Dialect.ImporterPath()
-		d.ReverseSource = &ReverseSource{
-			Database: d.Dialect.Name(),
-			ConnStr:  d.Dialect.ParseDSN(c.Params),
-		}
-	}
-	return d
-}
-
-func (ds *DataSource) Connect(verbose bool) (*xorm.Engine, error) {
-	if ds.Database == "" || ds.ConnStr == "" {
-		return nil, fmt.Errorf("the config of connection is empty")
-	} else if verbose {
-		pp.Println(ds.Database, ds.ConnStr)
-	}
-	engine, err := xorm.NewEngine(ds.Database, ds.ConnStr)
-	if err == nil {
-		engine.ShowSQL(verbose)
-	}
-	return engine, err
 }
