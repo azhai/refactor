@@ -34,8 +34,8 @@ func ({{$class}}) TableName() string {
 	golangCacheTemplate = `package {{.Target.NameSpace}}
 
 import (
+	"gitea.com/azhai/refactor/builtin/base"
 	"gitea.com/azhai/refactor/config"
-	base "gitea.com/azhai/refactor/language/common"
 	"github.com/azhai/gozzo-utils/redisw"
 	"github.com/gomodule/redigo/redis"
 )
@@ -78,8 +78,8 @@ func DelSession(token string) bool {
 	golangConnTemplate = `package {{.Target.NameSpace}}
 
 import (
+	"gitea.com/azhai/refactor/builtin/base"
 	"gitea.com/azhai/refactor/config"
-	base "gitea.com/azhai/refactor/language/common"
 	_ "{{.ImporterPath}}"
 	"xorm.io/xorm"
 )

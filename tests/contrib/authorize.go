@@ -3,7 +3,8 @@ package contrib
 import (
 	"strings"
 
-	"gitea.com/azhai/refactor/contrib/usertype"
+	"gitea.com/azhai/refactor/builtin/auth"
+	"gitea.com/azhai/refactor/builtin/usertype"
 	db "gitea.com/azhai/refactor/tests/models/default"
 	"github.com/azhai/gozzo-utils/common"
 	"xorm.io/xorm"
@@ -22,7 +23,7 @@ var (
 
 type UserAuth struct {
 	*db.User
-	usertype.IUserAuth
+	auth.IUserAuth
 }
 
 // 用户分类，无法区分内部用户和普通用户
@@ -97,7 +98,7 @@ func (a UserAuth) GetLimitedWhiteListUrls() []string {
 }
 
 // 获取正常用户权限可访问的网址
-func (a UserAuth) GetRegularPermissions(roles []string) (perms []usertype.IPermission) {
+func (a UserAuth) GetRegularPermissions(roles []string) (perms []auth.IPermission) {
 	var objs []*Permission
 	QueryPermissions(roles...).Find(&objs)
 	for _, obj := range objs {
@@ -107,7 +108,7 @@ func (a UserAuth) GetRegularPermissions(roles []string) (perms []usertype.IPermi
 }
 
 // 获取超级用户权限可访问的网址，不再检查正常用户权限
-func (a UserAuth) GetSuperPermissions(roles []string) (perms []usertype.IPermission) {
+func (a UserAuth) GetSuperPermissions(roles []string) (perms []auth.IPermission) {
 	var objs []*Permission
 	QueryPermissions(ROLE_NAME_SUPER).Find(&objs)
 	for _, obj := range objs {

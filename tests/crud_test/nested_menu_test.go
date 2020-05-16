@@ -3,7 +3,7 @@ package crud_test
 import (
 	"testing"
 
-	"gitea.com/azhai/refactor/contrib"
+	"gitea.com/azhai/refactor/tests/contrib"
 	_ "gitea.com/azhai/refactor/tests/models"
 	db "gitea.com/azhai/refactor/tests/models/default"
 	"github.com/stretchr/testify/assert"

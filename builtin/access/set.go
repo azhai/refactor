@@ -51,6 +51,13 @@ var (
 	}
 )
 
+func ContainAction(perm, act uint16, strict bool) bool {
+	if strict && act == NONE {
+		return false
+	}
+	return perm == ALL || perm&act == act
+}
+
 // 分解出具体权限
 func ParsePermNames(perm uint16) (codes []uint16, names []string) {
 	if perm == NONE {
@@ -61,7 +68,7 @@ func ParsePermNames(perm uint16) (codes []uint16, names []string) {
 		return
 	}
 	for code, name := range AccessNames {
-		if code > 0 && perm&code == code {
+		if ContainAction(perm, code, true) {
 			codes = append(codes, code)
 			names = append(names, name)
 		}

@@ -3,9 +3,10 @@ package crud_test
 import (
 	"testing"
 
-	"gitea.com/azhai/refactor/contrib"
-	"gitea.com/azhai/refactor/contrib/join"
-	base "gitea.com/azhai/refactor/language/common"
+	"gitea.com/azhai/refactor/builtin/base"
+	"gitea.com/azhai/refactor/builtin/join"
+	"gitea.com/azhai/refactor/inspect"
+	"gitea.com/azhai/refactor/tests/contrib"
 	_ "gitea.com/azhai/refactor/tests/models"
 	db "gitea.com/azhai/refactor/tests/models/default"
 	"github.com/k0kubun/pp"
@@ -34,7 +35,7 @@ func TestJoin01FindUserGroups(t *testing.T) {
 	var objs []*contrib.UserWithGroup
 	if err == nil && total > 0 {
 		var cols []string
-		cols = base.GetColumns(m.User, m.User.TableName(), cols)
+		cols = inspect.GetColumns(m.User, m.User.TableName(), cols)
 		query = filter(query).Cols(cols...)
 		if testing.Verbose() {
 			pp.Println(cols)

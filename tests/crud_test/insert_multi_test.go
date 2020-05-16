@@ -3,7 +3,8 @@ package crud_test
 import (
 	"testing"
 
-	"gitea.com/azhai/refactor/contrib"
+	"gitea.com/azhai/refactor/builtin/auth"
+	"gitea.com/azhai/refactor/tests/contrib"
 	_ "gitea.com/azhai/refactor/tests/models"
 	db "gitea.com/azhai/refactor/tests/models/default"
 	"github.com/stretchr/testify/assert"
@@ -51,7 +52,7 @@ func insertGroups(t *testing.T, data []map[string]string) map[string]db.Group {
 	var groups []db.Group
 	for _, row := range data {
 		groups = append(groups, db.Group{
-			Gid:    contrib.NewSerialNo('G'),
+			Gid:    auth.NewSerialNo('G'),
 			Title:  row["title"],
 			Remark: row["remark"],
 		})
@@ -82,12 +83,12 @@ func TestMulti01InsertUserRoleGroups(t *testing.T) {
 	assert.NoError(t, err)
 	groups := insertGroups(t, allGroupData)
 
-	cipher := contrib.Cipher()
+	cipher := auth.Cipher()
 	var userRoles []db.UserRole
 	for _, row := range allUserData {
 		username := row["username"].(string)
 		row["password"] = cipher.CreatePassword(username)
-		uid := contrib.NewSerialNo('U')
+		uid := auth.NewSerialNo('U')
 		row["uid"] = uid
 
 		uroles := userRoleGroups[username]["roles"]

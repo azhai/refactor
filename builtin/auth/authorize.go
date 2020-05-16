@@ -1,20 +1,10 @@
-package usertype
+package auth
 
 import (
 	"fmt"
 
+	"gitea.com/azhai/refactor/builtin/usertype"
 	"github.com/azhai/gozzo-utils/common"
-)
-
-type UserType int
-
-// 用户分类
-const (
-	ANONYMOUS UserType = iota // 匿名用户（未登录/未注册）
-	FORBIDDEN                 // 封禁用户（有违规被封号）
-	LIMITED                   // 受限用户（未过审或被降级）
-	REGULAR                   // 正常用户（正式会员）
-	SUPER                     // 超级用户（后台管理权限）
 )
 
 type IPermission interface {
@@ -23,7 +13,7 @@ type IPermission interface {
 
 type IUserAuth interface {
 	// 用户分类，无法区分内部用户和普通用户
-	GetUserType() (utype UserType, err error)
+	GetUserType() (utype usertype.UserType, err error)
 
 	// 用户拥有的角色
 	GetUserRoles() (roles []string, err error)
@@ -56,13 +46,13 @@ func Authorize(auth IUserAuth, act uint16, url string) error {
 		return nil
 	}
 
-	var utype UserType
+	var utype usertype.UserType
 	if utype, err = auth.GetUserType(); err != nil { // 出错了
 		return err
 	}
 
 	// 2. 匿名用户，如果是公开资源放行，否则失败
-	if utype == ANONYMOUS || utype == FORBIDDEN {
+	if utype == usertype.ANONYMOUS || utype == usertype.FORBIDDEN {
 		if urls := auth.GetAnonymousOpenUrls(); len(urls) > 0 {
 			if !common.StartStringList(url, urls) {
 				err = fmt.Errorf("已注册用户可访问，请您先登录！")
@@ -72,7 +62,7 @@ func Authorize(auth IUserAuth, act uint16, url string) error {
 	}
 
 	// 3. 受限用户，优先判断黑名单，此网址在黑名单中则失败
-	if utype == LIMITED {
+	if utype == usertype.LIMITED {
 		if urls := auth.GetLimitedBlackListUrls(); len(urls) > 0 { // 二选一
 			if common.StartStringList(url, urls) {
 				err = fmt.Errorf("您的账号无权限访问，请联系客服！")
@@ -91,7 +81,7 @@ func Authorize(auth IUserAuth, act uint16, url string) error {
 	}
 
 	// 4. 超级用户，如果有此权限则放行
-	if utype == SUPER {
+	if utype == usertype.SUPER {
 		if perms := auth.GetSuperPermissions(roles); len(perms) > 0 {
 			for _, perm := range perms {
 				if perm.CheckPerm(act, url) {

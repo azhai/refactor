@@ -3,9 +3,9 @@ package crud_test
 import (
 	"testing"
 
-	"gitea.com/azhai/refactor/contrib"
-	"gitea.com/azhai/refactor/contrib/access"
-	"gitea.com/azhai/refactor/contrib/usertype"
+	"gitea.com/azhai/refactor/builtin/access"
+	"gitea.com/azhai/refactor/builtin/auth"
+	"gitea.com/azhai/refactor/tests/contrib"
 	_ "gitea.com/azhai/refactor/tests/models"
 	db "gitea.com/azhai/refactor/tests/models/default"
 	"github.com/stretchr/testify/assert"
@@ -36,13 +36,13 @@ func TestAccess01Insert(t *testing.T) {
 func TestAccess02Anonymous(t *testing.T) {
 	var err error
 	anonymous := &contrib.UserAuth{}
-	err = usertype.Authorize(anonymous, access.VIEW, "style.css")
+	err = auth.Authorize(anonymous, access.VIEW, "style.css")
 	assert.NoError(t, err)
-	err = usertype.Authorize(anonymous, access.POST, "/images/abc.jpg")
+	err = auth.Authorize(anonymous, access.POST, "/images/abc.jpg")
 	assert.NoError(t, err)
-	err = usertype.Authorize(anonymous, access.POST, "/error/404")
+	err = auth.Authorize(anonymous, access.POST, "/error/404")
 	assert.NoError(t, err)
-	err = usertype.Authorize(anonymous, access.POST, "/dashboard")
+	err = auth.Authorize(anonymous, access.POST, "/dashboard")
 	assert.Error(t, err) // 无权限！
 }
 
@@ -50,11 +50,11 @@ func TestAccess03Demo(t *testing.T) {
 	var err error
 	demo := &contrib.UserAuth{User: new(db.User)}
 	demo.User.Load("username = ?", "demo")
-	err = usertype.Authorize(demo, access.DISABLE, "/images/abc.jpg")
+	err = auth.Authorize(demo, access.DISABLE, "/images/abc.jpg")
 	assert.NoError(t, err)
-	err = usertype.Authorize(demo, access.POST, "/dashboard")
+	err = auth.Authorize(demo, access.POST, "/dashboard")
 	assert.NoError(t, err)
-	err = usertype.Authorize(demo, access.VIEW, "/notExists")
+	err = auth.Authorize(demo, access.VIEW, "/notExists")
 	assert.Error(t, err) // 无权限！
 }
 
@@ -62,12 +62,12 @@ func TestAccess04Admin(t *testing.T) {
 	var err error
 	admin := &contrib.UserAuth{User: new(db.User)}
 	admin.User.Load("username = ?", "admin")
-	err = usertype.Authorize(admin, access.POST, "/images/abc.jpg")
+	err = auth.Authorize(admin, access.POST, "/images/abc.jpg")
 	assert.NoError(t, err)
-	err = usertype.Authorize(admin, access.REMOVE, "/dashboard")
+	err = auth.Authorize(admin, access.REMOVE, "/dashboard")
 	assert.NoError(t, err)
-	err = usertype.Authorize(admin, access.GET, "/notExists")
+	err = auth.Authorize(admin, access.GET, "/notExists")
 	assert.NoError(t, err)
-	err = usertype.Authorize(admin, access.NONE, "")
+	err = auth.Authorize(admin, access.NONE, "")
 	assert.NoError(t, err)
 }

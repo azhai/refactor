@@ -1,14 +1,44 @@
-package common
+package base
 
 import (
 	"fmt"
-	"reflect"
 	"regexp"
 	"strings"
+	"time"
 
 	"xorm.io/xorm"
 	"xorm.io/xorm/schemas"
 )
+
+// 过滤查询
+type FilterFunc = func(query *xorm.Session) *xorm.Session
+
+// 修改操作，用于事务
+type ModifyFunc = func(tx *xorm.Session) (int64, error)
+
+/**
+ * 数据表名
+ */
+type ITableName interface {
+	TableName() string
+}
+
+/**
+ * 数据表注释
+ */
+type ITableComment interface {
+	TableComment() string
+}
+
+// 对参数先进行转义Quote
+func Qprintf(engine *xorm.Engine, format string, args ...interface{}) string {
+	if engine != nil {
+		for i, arg := range args {
+			args[i] = engine.Quote(arg.(string))
+		}
+	}
+	return fmt.Sprintf(format, args...)
+}
 
 // 盲转义
 func BlindlyQuote(engine *xorm.Engine, sep string, words ...string) string {
@@ -27,16 +57,6 @@ func BlindlyQuote(engine *xorm.Engine, sep string, words ...string) string {
 	return result
 }
 
-// 对参数先进行转义Quote
-func Qprintf(engine *xorm.Engine, format string, args ...interface{}) string {
-	if engine != nil {
-		for i, arg := range args {
-			args[i] = engine.Quote(arg.(string))
-		}
-	}
-	return fmt.Sprintf(format, args...)
-}
-
 // 获取Model的字段列表
 func GetPrimarykey(engine *xorm.Engine, m interface{}) *schemas.Column {
 	table, err := engine.TableInfo(m)
@@ -47,60 +67,6 @@ func GetPrimarykey(engine *xorm.Engine, m interface{}) *schemas.Column {
 		return cols[0]
 	}
 	return nil
-}
-
-func GetIndirectType(v interface{}) (rt reflect.Type) {
-	var ok bool
-	if rt, ok = v.(reflect.Type); !ok {
-		rt = reflect.TypeOf(v)
-	}
-	if rt.Kind() == reflect.Ptr {
-		rt = rt.Elem()
-	}
-	return
-}
-
-func GetFinalType(v interface{}) (rt reflect.Type) {
-	rt = GetIndirectType(v)
-	for {
-		switch rt.Kind() {
-		default:
-			break
-		case reflect.Ptr, reflect.Chan:
-			rt = rt.Elem()
-		case reflect.Array, reflect.Slice:
-			rt = rt.Elem()
-		case reflect.Map:
-			kk := rt.Key().Kind()
-			if kk == reflect.String || kk <= reflect.Float64 {
-				rt = rt.Elem()
-			} else {
-				break
-			}
-		}
-	}
-	return
-}
-
-func GetColumns(v interface{}, alias string, cols []string) []string {
-	rt := GetIndirectType(v)
-	if rt.Kind() != reflect.Struct {
-		return cols
-	}
-	for i := 0; i < rt.NumField(); i++ {
-		t := rt.Field(i).Tag.Get("json")
-		if t == "" || t == "-" {
-			continue
-		} else if strings.HasSuffix(t, "inline") {
-			cols = GetColumns(rt.Field(i).Type, alias, cols)
-		} else {
-			if alias != "" {
-				t = fmt.Sprintf("%s.%s", alias, t)
-			}
-			cols = append(cols, t)
-		}
-	}
-	return cols
 }
 
 // 调整从后往前翻页
@@ -128,4 +94,13 @@ func Paginate(query *xorm.Session, pageno, pagesize int) *xorm.Session {
 		}
 	}
 	return query.Limit(pagesize, offset)
+}
+
+/**
+ * 时间相关的三个典型字段
+ */
+type TimeMixin struct {
+	CreatedAt time.Time `json:"created_at" xorm:"created comment('创建时间') TIMESTAMP"`       // 创建时间
+	UpdatedAt time.Time `json:"updated_at" xorm:"updated comment('更新时间') TIMESTAMP"`       // 更新时间
+	DeletedAt time.Time `json:"deleted_at" xorm:"deleted comment('删除时间') index TIMESTAMP"` // 删除时间
 }

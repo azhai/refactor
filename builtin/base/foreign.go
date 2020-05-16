@@ -1,10 +1,11 @@
-package common
+package base
 
 import (
 	"bytes"
 	"fmt"
 
-	"gitea.com/azhai/refactor/contrib/join"
+	"gitea.com/azhai/refactor/builtin/join"
+	"gitea.com/azhai/refactor/inspect"
 	"xorm.io/xorm"
 )
 
@@ -17,7 +18,7 @@ func JoinQuery(engine *xorm.Engine, query *xorm.Session,
 		query = engine.Table(table)
 	}
 	var cols []string
-	cols = GetColumns(foreign.Table, frgAlias, cols)
+	cols = inspect.GetColumns(foreign.Table, frgAlias, cols)
 	query = query.Join(string(foreign.Join), frgTable, cond)
 	return query, cols
 }

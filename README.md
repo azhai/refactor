@@ -38,7 +38,7 @@ package db
 // Filename is models.go
 
 import (
-	base "gitea.com/azhai/refactor/language/common"
+	"gitea.com/azhai/refactor/builtin/base"
 )
 
 type Menu struct {

@@ -1,4 +1,4 @@
-package rewrite
+package inspect
 
 import (
 	"fmt"
