@@ -43,7 +43,7 @@ type ConnConfig struct {
 
 func NewReverseSource(c ConnConfig) (*ReverseSource, dialect.Dialect) {
 	d := dialect.GetDialectByName(c.DriverName)
-	r := &ReverseSource {
+	r := &ReverseSource{
 		Database: d.Name(), // 其实也等于 c.DriverName
 		ConnStr:  d.ParseDSN(c.Params),
 	}
@@ -114,7 +114,7 @@ func SaveSettingsTo(fileName string, cfg interface{}) error {
 	return err
 }
 
-func Settings2String(cfg interface{}) []byte {
+func Settings2Bytes(cfg interface{}) []byte {
 	buf := new(bytes.Buffer)
 	err := yaml.NewEncoder(buf).Encode(cfg)
 	if err == nil {

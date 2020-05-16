@@ -5,12 +5,13 @@ import (
 	"io/ioutil"
 	"testing"
 
+	"xorm.io/xorm"
+
 	"gitea.com/azhai/refactor"
 	"gitea.com/azhai/refactor/config"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/k0kubun/pp"
 	"github.com/stretchr/testify/assert"
-	"xorm.io/xorm"
 )
 
 var (
@@ -18,29 +19,18 @@ var (
 	testSqlFile = "./mysql_test.sql"
 )
 
-func getDataSource(cfg config.IReverseSettings, name string) (*config.DataSource, error) {
-	if c, ok := cfg.GetConnConfig(name); ok {
-		d := config.NewDataSource(c, name)
-		if d.ReverseSource == nil {
-			err := fmt.Errorf("the driver %s is not exists", c.DriverName)
-			return d, err
-		}
-		return d, nil
+func createTables(cfg config.IReverseSettings) (err error) {
+	c, ok := cfg.GetConnConfig("default")
+	if !ok {
+		err = fmt.Errorf("the connection is not found")
+		return
 	}
-	err := fmt.Errorf("the connection named %s is not found", name)
-	return nil, err
-}
-
-func createTables(cfg config.IReverseSettings) error {
-	d, err := getDataSource(cfg, "default")
-	if err != nil {
-		return err
-	}
+	r, _ := config.NewReverseSource(c)
 	var db *xorm.Engine
-	if db, err = d.Connect(false); err == nil {
+	if db, err = r.Connect(false); err == nil {
 		_, err = db.ImportFile(testSqlFile)
 	}
-	return err
+	return
 }
 
 func Test01CreateTables(t *testing.T) {

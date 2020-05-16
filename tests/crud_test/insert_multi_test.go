@@ -3,7 +3,7 @@ package crud_test
 import (
 	"testing"
 
-	"gitea.com/azhai/refactor/tests/contrib"
+	"gitea.com/azhai/refactor/contrib"
 	_ "gitea.com/azhai/refactor/tests/models"
 	db "gitea.com/azhai/refactor/tests/models/default"
 	"github.com/stretchr/testify/assert"
@@ -56,7 +56,6 @@ func insertGroups(t *testing.T, data []map[string]string) map[string]db.Group {
 			Remark: row["remark"],
 		})
 	}
-	result := make(map[string]db.Group)
 	if len(groups) > 0 {
 		table := groups[0].TableName()
 		// 清空
@@ -66,6 +65,7 @@ func insertGroups(t *testing.T, data []map[string]string) map[string]db.Group {
 		_, err = db.Table(table).InsertMulti(groups)
 		assert.NoError(t, err)
 	}
+	result := make(map[string]db.Group)
 	for _, g := range groups {
 		result[g.Title] = g
 	}

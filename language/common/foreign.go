@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
-	"gitea.com/azhai/refactor/defines/join"
+	"gitea.com/azhai/refactor/contrib/join"
 	"xorm.io/xorm"
 )
 

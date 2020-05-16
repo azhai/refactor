@@ -3,7 +3,7 @@ package contrib
 import (
 	"strings"
 
-	"gitea.com/azhai/refactor/defines/usertype"
+	"gitea.com/azhai/refactor/contrib/usertype"
 	db "gitea.com/azhai/refactor/tests/models/default"
 	"github.com/azhai/gozzo-utils/common"
 	"xorm.io/xorm"

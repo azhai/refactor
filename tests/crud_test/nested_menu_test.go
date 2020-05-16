@@ -3,7 +3,7 @@ package crud_test
 import (
 	"testing"
 
-	"gitea.com/azhai/refactor/tests/contrib"
+	"gitea.com/azhai/refactor/contrib"
 	_ "gitea.com/azhai/refactor/tests/models"
 	db "gitea.com/azhai/refactor/tests/models/default"
 	"github.com/stretchr/testify/assert"
@@ -31,11 +31,11 @@ func TestNested01InsertMenus(t *testing.T) {
 	assert.NoError(t, err)
 	icon, ok := "", false
 	for _, row := range allMenuData {
-		if icon, ok = row["icon"]; ok && icon != "" {
+		if icon, ok = row["icon"]; ok && icon != "" { // 第一级顶级菜单，都有icon，路径以斜线开头
 			parent = contrib.NewMenu(row["path"], row["title"], icon)
 			err := contrib.AddMenuToParent(parent, nil)
 			assert.NoError(t, err)
-		} else {
+		} else { // 第二级子菜单，没有icon，属于最近的一个有icon的顶级菜单
 			menu := contrib.NewMenu(row["path"], row["title"], icon)
 			err := contrib.AddMenuToParent(menu, parent)
 			assert.NoError(t, err)

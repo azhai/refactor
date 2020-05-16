@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"gitea.com/azhai/refactor/defines/access"
+	"gitea.com/azhai/refactor/contrib/access"
 	db "gitea.com/azhai/refactor/tests/models/default"
 	"github.com/azhai/gozzo-utils/cryptogy"
 	"github.com/muyo/sno"

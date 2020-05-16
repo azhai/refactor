@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"gitea.com/azhai/refactor/defines/access"
+	"gitea.com/azhai/refactor/contrib/access"
 	base "gitea.com/azhai/refactor/language/common"
 	"gitea.com/azhai/refactor/tests/models/default"
 )
