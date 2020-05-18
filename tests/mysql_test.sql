@@ -6,7 +6,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- Table structure for t_access
 -- ----------------------------
 DROP TABLE IF EXISTS `t_access`;
-CREATE TABLE `t_access`  (
+CREATE TABLE `t_access` (
   `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `role_name` varchar(50) NOT NULL DEFAULT '' COMMENT '角色名',
   `resource_type` varchar(50) NOT NULL DEFAULT '' COMMENT '资源类型',
@@ -24,8 +24,8 @@ CREATE TABLE `t_access`  (
 -- Table structure for t_cron_daily
 -- ----------------------------
 DROP TABLE IF EXISTS `t_cron_daily`;
-CREATE TABLE `t_cron_daily`  (
-  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+CREATE TABLE `t_cron_daily` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `task_id` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '任务ID',
   `is_active` bit(1) NOT NULL DEFAULT b'0' COMMENT '有效',
   `workday` bit(1) NOT NULL DEFAULT b'0' COMMENT '工作日',
@@ -34,14 +34,14 @@ CREATE TABLE `t_cron_daily`  (
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_cron_daily_task_id`(`task_id`) USING BTREE,
   INDEX `idx_cron_daily_run_clock`(`run_clock`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8  COMMENT = '日常执行' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COMMENT = '日常执行' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for t_cron_notice
 -- ----------------------------
 DROP TABLE IF EXISTS `t_cron_notice`;
-CREATE TABLE `t_cron_notice`  (
-  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+CREATE TABLE `t_cron_notice` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `user_id` int(10) UNSIGNED NULL DEFAULT 0 COMMENT '用户ID',
   `task_id` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '任务ID',
   `is_active` bit(1) NOT NULL DEFAULT b'0' COMMENT '有效',
@@ -55,17 +55,57 @@ CREATE TABLE `t_cron_notice`  (
   `stop_clock` char(8) NULL DEFAULT NULL COMMENT '结束时刻',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_cron_notice_task_id`(`task_id`) USING BTREE,
+  INDEX `idx_cron_notice_user_id`(`user_id`) USING BTREE,
   INDEX `idx_cron_notice_read_time`(`read_time`) USING BTREE,
-  INDEX `idx_cron_notice_delay_start_time`(`delay_start_time`) USING BTREE,
-  INDEX `idx_cron_notice_user_id`(`user_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8  COMMENT = '消息提醒' ROW_FORMAT = DYNAMIC;
+  INDEX `idx_cron_notice_delay_start_time`(`delay_start_time`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COMMENT = '消息提醒' ROW_FORMAT = DYNAMIC;
+
+CREATE TABLE IF NOT EXISTS `t_cron_notice_{{LAST_MONTH}}` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` int(10) UNSIGNED NULL DEFAULT 0 COMMENT '用户ID',
+  `task_id` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '任务ID',
+  `is_active` bit(1) NOT NULL DEFAULT b'0' COMMENT '有效',
+  `important` tinyint(3) UNSIGNED NOT NULL DEFAULT 0 COMMENT '重要程度',
+  `message` text NULL COMMENT '消息内容',
+  `read_time` datetime(0) NULL DEFAULT NULL COMMENT '阅读时间',
+  `delay_start_time` datetime(0) NULL DEFAULT NULL COMMENT '推迟开始时间',
+  `start_time` datetime(0) NULL DEFAULT NULL COMMENT '开始时间',
+  `stop_time` datetime(0) NULL DEFAULT NULL COMMENT '结束时间',
+  `start_clock` char(8) NULL DEFAULT NULL COMMENT '开始时刻',
+  `stop_clock` char(8) NULL DEFAULT NULL COMMENT '结束时刻',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_cron_notice_task_id`(`task_id`) USING BTREE,
+  INDEX `idx_cron_notice_user_id`(`user_id`) USING BTREE,
+  INDEX `idx_cron_notice_read_time`(`read_time`) USING BTREE,
+  INDEX `idx_cron_notice_delay_start_time`(`delay_start_time`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COMMENT = '消息提醒' ROW_FORMAT = DYNAMIC;
+
+CREATE TABLE IF NOT EXISTS `t_cron_notice_{{CURR_MONTH}}` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_id` int(10) UNSIGNED NULL DEFAULT 0 COMMENT '用户ID',
+  `task_id` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '任务ID',
+  `is_active` bit(1) NOT NULL DEFAULT b'0' COMMENT '有效',
+  `important` tinyint(3) UNSIGNED NOT NULL DEFAULT 0 COMMENT '重要程度',
+  `message` text NULL COMMENT '消息内容',
+  `read_time` datetime(0) NULL DEFAULT NULL COMMENT '阅读时间',
+  `delay_start_time` datetime(0) NULL DEFAULT NULL COMMENT '推迟开始时间',
+  `start_time` datetime(0) NULL DEFAULT NULL COMMENT '开始时间',
+  `stop_time` datetime(0) NULL DEFAULT NULL COMMENT '结束时间',
+  `start_clock` char(8) NULL DEFAULT NULL COMMENT '开始时刻',
+  `stop_clock` char(8) NULL DEFAULT NULL COMMENT '结束时刻',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_cron_notice_task_id`(`task_id`) USING BTREE,
+  INDEX `idx_cron_notice_user_id`(`user_id`) USING BTREE,
+  INDEX `idx_cron_notice_read_time`(`read_time`) USING BTREE,
+  INDEX `idx_cron_notice_delay_start_time`(`delay_start_time`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COMMENT = '消息提醒' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for t_cron_task
 -- ----------------------------
 DROP TABLE IF EXISTS `t_cron_task`;
-CREATE TABLE `t_cron_task`  (
-  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+CREATE TABLE `t_cron_task` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `user_id` int(10) UNSIGNED NULL DEFAULT 0 COMMENT '用户ID',
   `refer_id` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '关联任务ID',
   `is_active` bit(1) NOT NULL DEFAULT b'0' COMMENT '有效',
@@ -78,30 +118,52 @@ CREATE TABLE `t_cron_task`  (
   `last_error` text NULL COMMENT '出错信息',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_cron_task_refer_id`(`refer_id`) USING BTREE,
-  INDEX `idx_cron_task_last_time`(`last_time`) USING BTREE,
-  INDEX `idx_cron_task_user_id`(`user_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8  COMMENT = '定时任务' ROW_FORMAT = DYNAMIC;
+  INDEX `idx_cron_task_user_id`(`user_id`) USING BTREE,
+  INDEX `idx_cron_task_last_time`(`last_time`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COMMENT = '定时任务' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for t_cron_timer
 -- ----------------------------
 DROP TABLE IF EXISTS `t_cron_timer`;
-CREATE TABLE `t_cron_timer`  (
-  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '主键',
+CREATE TABLE `t_cron_timer` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `task_id` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '任务ID',
   `is_active` bit(1) NOT NULL DEFAULT b'0' COMMENT '有效',
   `run_date` date NULL DEFAULT NULL COMMENT '指定日期',
-  `run_clock` char(8) NOT NULL DEFAULT '' COMMENT '具体时间',
+  `run_clock` char(8) NULL DEFAULT NULL COMMENT '具体时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_cron_timer_task_id`(`task_id`) USING BTREE,
   INDEX `idx_cron_timer_run_date`(`run_date`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8  COMMENT = '定时执行' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COMMENT = '定时执行' ROW_FORMAT = DYNAMIC;
+
+CREATE TABLE IF NOT EXISTS `t_cron_timer_{{LAST_MONTH}}` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `task_id` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '任务ID',
+  `is_active` bit(1) NOT NULL DEFAULT b'0' COMMENT '有效',
+  `run_date` date NULL DEFAULT NULL COMMENT '指定日期',
+  `run_clock` char(8) NULL DEFAULT NULL COMMENT '具体时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_cron_timer_task_id`(`task_id`) USING BTREE,
+  INDEX `idx_cron_timer_run_date`(`run_date`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COMMENT = '定时执行' ROW_FORMAT = DYNAMIC;
+
+CREATE TABLE IF NOT EXISTS `t_cron_timer_{{CURR_MONTH}}` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `task_id` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '任务ID',
+  `is_active` bit(1) NOT NULL DEFAULT b'0' COMMENT '有效',
+  `run_date` date NULL DEFAULT NULL COMMENT '指定日期',
+  `run_clock` char(8) NULL DEFAULT NULL COMMENT '具体时间',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_cron_timer_task_id`(`task_id`) USING BTREE,
+  INDEX `idx_cron_timer_run_date`(`run_date`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COMMENT = '定时执行' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Table structure for t_group
 -- ----------------------------
 DROP TABLE IF EXISTS `t_group`;
-CREATE TABLE `t_group`  (
+CREATE TABLE `t_group` (
   `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `gid` char(16) NOT NULL DEFAULT '' COMMENT '唯一ID',
   `title` varchar(50) NOT NULL DEFAULT '' COMMENT '名称',
@@ -115,7 +177,7 @@ CREATE TABLE `t_group`  (
 -- Table structure for t_menu
 -- ----------------------------
 DROP TABLE IF EXISTS `t_menu`;
-CREATE TABLE `t_menu`  (
+CREATE TABLE `t_menu` (
   `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `lft` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '左边界',
   `rgt` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '右边界',
@@ -129,7 +191,6 @@ CREATE TABLE `t_menu`  (
   `deleted_at` timestamp(0) NULL DEFAULT NULL COMMENT '删除时间',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_menu_rgt`(`rgt`) USING BTREE,
-  INDEX `idx_menu_depth`(`depth`) USING BTREE,
   INDEX `idx_menu_path`(`path`) USING BTREE,
   INDEX `idx_menu_deleted_at`(`deleted_at`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COMMENT = '菜单' ROW_FORMAT = DYNAMIC;
@@ -138,7 +199,7 @@ CREATE TABLE `t_menu`  (
 -- Table structure for t_role
 -- ----------------------------
 DROP TABLE IF EXISTS `t_role`;
-CREATE TABLE `t_role`  (
+CREATE TABLE `t_role` (
   `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `name` varchar(50) NOT NULL DEFAULT '' COMMENT '名称',
   `remark` text NULL COMMENT '说明备注',
@@ -154,7 +215,7 @@ CREATE TABLE `t_role`  (
 -- Table structure for t_user
 -- ----------------------------
 DROP TABLE IF EXISTS `t_user`;
-CREATE TABLE `t_user`  (
+CREATE TABLE `t_user` (
   `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `uid` char(16) NOT NULL DEFAULT '' COMMENT '唯一ID',
   `username` varchar(30) NOT NULL DEFAULT '' COMMENT '用户名',
@@ -180,13 +241,12 @@ CREATE TABLE `t_user`  (
 -- Table structure for t_user_role
 -- ----------------------------
 DROP TABLE IF EXISTS `t_user_role`;
-CREATE TABLE `t_user_role`  (
+CREATE TABLE `t_user_role` (
   `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `user_uid` char(16) NOT NULL DEFAULT '' COMMENT '用户ID',
   `role_name` varchar(50) NOT NULL DEFAULT '' COMMENT '角色名',
   PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_user_role_user_uid`(`user_uid`) USING BTREE,
-  INDEX `idx_user_role_role_name`(`role_name`) USING BTREE
+  INDEX `idx_user_role_user_uid`(`user_uid`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COMMENT = '用户角色' ROW_FORMAT = DYNAMIC;
 
 SET FOREIGN_KEY_CHECKS = 1;

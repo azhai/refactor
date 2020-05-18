@@ -3,7 +3,9 @@ package refactor_test
 import (
 	"fmt"
 	"io/ioutil"
+	"strings"
 	"testing"
+	"time"
 
 	"xorm.io/xorm"
 
@@ -27,9 +29,19 @@ func createTables(cfg config.IReverseSettings) (err error) {
 	}
 	r, _ := config.NewReverseSource(c)
 	var db *xorm.Engine
-	if db, err = r.Connect(false); err == nil {
-		_, err = db.ImportFile(testSqlFile)
+	if db, err = r.Connect(false); err != nil {
+		return
 	}
+	var content []byte
+	if content, err = ioutil.ReadFile(testSqlFile); err != nil {
+		return
+	}
+	repl := strings.NewReplacer(
+		"{{CURR_MONTH}}", time.Now().Format("200601"),
+		"{{LAST_MONTH}}", time.Now().AddDate(0, -1, 0).Format("200601"),
+	)
+	sql := repl.Replace(string(content))
+	_, err = db.Import(strings.NewReader(sql))
 	return
 }
 

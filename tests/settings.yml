@@ -33,6 +33,9 @@ connections:
       table_prefix: "t_"
       include_tables:
          - "t_cron_*"
+      exclude_tables:
+         - "t_cron_notice_*"
+         - "t_cron_timer_*"
       <<: *mysql  #引用mysql配置
 
 reverse_targets:

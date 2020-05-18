@@ -162,7 +162,9 @@ import (
 	"{{$initns}}/{{$dir}}"{{end}}
 )
 
-var configFile = "./settings.yml"
+var (
+	configFile = "./settings.yml"
+)
 
 func init() {
 	settings := cmd.Prepare(configFile)
