@@ -16,7 +16,7 @@ var substituteModels = map[string]*ModelSummary{
 	"base.TimeMixin": {
 		Name:   "base.TimeMixin",
 		Import: "gitea.com/azhai/refactor/builtin/base",
-		Alias:  "base",
+		Alias:  "",
 		FieldLines: []string{
 			"CreatedAt time.Time `json:\"created_at\" xorm:\"created comment('创建时间') TIMESTAMP\"`       // 创建时间",
 			"UpdatedAt time.Time `json:\"updated_at\" xorm:\"updated comment('更新时间') TIMESTAMP\"`       // 更新时间",
@@ -26,7 +26,7 @@ var substituteModels = map[string]*ModelSummary{
 	"base.NestedMixin": {
 		Name:   "base.NestedMixin",
 		Import: "gitea.com/azhai/refactor/builtin/base",
-		Alias:  "base",
+		Alias:  "",
 		FieldLines: []string{
 			"Lft   int `json:\"lft\" xorm:\"notnull default 0 comment('左边界') INT(10)\"`           // 左边界",
 			"Rgt   int `json:\"rgt\" xorm:\"notnull default 0 comment('右边界') index INT(10)\"`     // 右边界",

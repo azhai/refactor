@@ -154,33 +154,23 @@ func QueryAll(filter base.FilterFunc, pages ...int) *xorm.Session {
 
 {{$initns := .Target.InitNameSpace -}}
 import (
+	"gitea.com/azhai/refactor/cmd"
 	"gitea.com/azhai/refactor/config"
-	"gitea.com/azhai/refactor/config/dialect"
+
 	{{- range $dir, $al := .Imports}}
 	{{if ne $al $dir}}{{$al}} {{end -}}
 	"{{$initns}}/{{$dir}}"{{end}}
 )
 
-var (
-	configFile = "./settings.yml"
-	settings   *config.Settings
-	verbose    bool
-)
+var configFile = "./settings.yml"
 
 func init() {
-	settings, err := config.ReadSettings(configFile)
-	if err != nil {
-		panic(err)
-	}
-	verbose = settings.Application.Debug
+	settings := cmd.Prepare(configFile)
 	ConnectDatabases(settings.GetConnConfigMap())
 }
 
-func Verbose() bool {
-	return verbose
-}
-
 func ConnectDatabases(confs map[string]config.ConnConfig) {
+	verbose := cmd.Verbose()
 	for key, c := range confs {
 		r, _ := config.NewReverseSource(c)
 		switch key {

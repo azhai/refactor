@@ -10,4 +10,4 @@ IF "%1" == "build" GOTO build
 :all
     del reverse.exe
 :build
-    go.exe build -ldflags="-s -w" -o reverse.exe ./cmd/
+    go.exe build -ldflags="-s -w" -o reverse.exe ./cmd/reverse/

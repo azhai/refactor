@@ -11,7 +11,7 @@ GOBUILD=$(GOARGS) $(GOBIN) build -ldflags="$(RELEASE)"
 all: clean build
 build:
 	@echo "Compile $(BINNAME) ..."
-	GOOS=$(GOOS) $(GOBUILD) -o $(BINNAME) ./cmd/
+	GOOS=$(GOOS) $(GOBUILD) -o $(BINNAME) ./cmd/reverse/
 	@echo "Build success."
 clean:
 	rm -f $(BINNAME)
