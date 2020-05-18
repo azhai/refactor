@@ -10,9 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type Dict = map[string]interface{}
-
-var allUserData = []Dict{
+var allUserData = []map[string]interface{}{
 	{
 		"username":     "admin",
 		"realname":     "管理员",

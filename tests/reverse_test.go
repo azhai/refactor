@@ -38,7 +38,8 @@ func createTables(cfg config.IReverseSettings) (err error) {
 	}
 	repl := strings.NewReplacer(
 		"{{CURR_MONTH}}", time.Now().Format("200601"),
-		"{{LAST_MONTH}}", time.Now().AddDate(0, -1, 0).Format("200601"),
+		"{{PREV_MONTH}}", time.Now().AddDate(0, -1, 0).Format("200601"),
+		"{{EARLY_MONTH}}", time.Now().AddDate(0, -2, 0).Format("200601"),
 	)
 	sql := repl.Replace(string(content))
 	_, err = db.Import(strings.NewReader(sql))

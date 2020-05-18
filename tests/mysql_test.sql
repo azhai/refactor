@@ -42,7 +42,7 @@ CREATE TABLE `t_cron_daily` (
 DROP TABLE IF EXISTS `t_cron_notice`;
 CREATE TABLE `t_cron_notice` (
   `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `user_id` int(10) UNSIGNED NULL DEFAULT 0 COMMENT '用户ID',
+  `user_uid` char(16) NOT NULL DEFAULT '' COMMENT '用户ID',
   `task_id` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '任务ID',
   `is_active` bit(1) NOT NULL DEFAULT b'0' COMMENT '有效',
   `important` tinyint(3) UNSIGNED NOT NULL DEFAULT 0 COMMENT '重要程度',
@@ -55,34 +55,14 @@ CREATE TABLE `t_cron_notice` (
   `stop_clock` char(8) NULL DEFAULT NULL COMMENT '结束时刻',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_cron_notice_task_id`(`task_id`) USING BTREE,
-  INDEX `idx_cron_notice_user_id`(`user_id`) USING BTREE,
-  INDEX `idx_cron_notice_read_time`(`read_time`) USING BTREE,
-  INDEX `idx_cron_notice_delay_start_time`(`delay_start_time`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COMMENT = '消息提醒' ROW_FORMAT = DYNAMIC;
-
-CREATE TABLE IF NOT EXISTS `t_cron_notice_{{LAST_MONTH}}` (
-  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `user_id` int(10) UNSIGNED NULL DEFAULT 0 COMMENT '用户ID',
-  `task_id` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '任务ID',
-  `is_active` bit(1) NOT NULL DEFAULT b'0' COMMENT '有效',
-  `important` tinyint(3) UNSIGNED NOT NULL DEFAULT 0 COMMENT '重要程度',
-  `message` text NULL COMMENT '消息内容',
-  `read_time` datetime(0) NULL DEFAULT NULL COMMENT '阅读时间',
-  `delay_start_time` datetime(0) NULL DEFAULT NULL COMMENT '推迟开始时间',
-  `start_time` datetime(0) NULL DEFAULT NULL COMMENT '开始时间',
-  `stop_time` datetime(0) NULL DEFAULT NULL COMMENT '结束时间',
-  `start_clock` char(8) NULL DEFAULT NULL COMMENT '开始时刻',
-  `stop_clock` char(8) NULL DEFAULT NULL COMMENT '结束时刻',
-  PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_cron_notice_task_id`(`task_id`) USING BTREE,
-  INDEX `idx_cron_notice_user_id`(`user_id`) USING BTREE,
+  INDEX `idx_cron_notice_user_uid`(`user_uid`) USING BTREE,
   INDEX `idx_cron_notice_read_time`(`read_time`) USING BTREE,
   INDEX `idx_cron_notice_delay_start_time`(`delay_start_time`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COMMENT = '消息提醒' ROW_FORMAT = DYNAMIC;
 
 CREATE TABLE IF NOT EXISTS `t_cron_notice_{{CURR_MONTH}}` (
   `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `user_id` int(10) UNSIGNED NULL DEFAULT 0 COMMENT '用户ID',
+  `user_uid` char(16) NOT NULL DEFAULT '' COMMENT '用户ID',
   `task_id` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '任务ID',
   `is_active` bit(1) NOT NULL DEFAULT b'0' COMMENT '有效',
   `important` tinyint(3) UNSIGNED NOT NULL DEFAULT 0 COMMENT '重要程度',
@@ -95,7 +75,47 @@ CREATE TABLE IF NOT EXISTS `t_cron_notice_{{CURR_MONTH}}` (
   `stop_clock` char(8) NULL DEFAULT NULL COMMENT '结束时刻',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_cron_notice_task_id`(`task_id`) USING BTREE,
-  INDEX `idx_cron_notice_user_id`(`user_id`) USING BTREE,
+  INDEX `idx_cron_notice_user_uid`(`user_uid`) USING BTREE,
+  INDEX `idx_cron_notice_read_time`(`read_time`) USING BTREE,
+  INDEX `idx_cron_notice_delay_start_time`(`delay_start_time`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COMMENT = '消息提醒' ROW_FORMAT = DYNAMIC;
+
+CREATE TABLE IF NOT EXISTS `t_cron_notice_{{PREV_MONTH}}` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_uid` char(16) NOT NULL DEFAULT '' COMMENT '用户ID',
+  `task_id` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '任务ID',
+  `is_active` bit(1) NOT NULL DEFAULT b'0' COMMENT '有效',
+  `important` tinyint(3) UNSIGNED NOT NULL DEFAULT 0 COMMENT '重要程度',
+  `message` text NULL COMMENT '消息内容',
+  `read_time` datetime(0) NULL DEFAULT NULL COMMENT '阅读时间',
+  `delay_start_time` datetime(0) NULL DEFAULT NULL COMMENT '推迟开始时间',
+  `start_time` datetime(0) NULL DEFAULT NULL COMMENT '开始时间',
+  `stop_time` datetime(0) NULL DEFAULT NULL COMMENT '结束时间',
+  `start_clock` char(8) NULL DEFAULT NULL COMMENT '开始时刻',
+  `stop_clock` char(8) NULL DEFAULT NULL COMMENT '结束时刻',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_cron_notice_task_id`(`task_id`) USING BTREE,
+  INDEX `idx_cron_notice_user_uid`(`user_uid`) USING BTREE,
+  INDEX `idx_cron_notice_read_time`(`read_time`) USING BTREE,
+  INDEX `idx_cron_notice_delay_start_time`(`delay_start_time`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COMMENT = '消息提醒' ROW_FORMAT = DYNAMIC;
+
+CREATE TABLE IF NOT EXISTS `t_cron_notice_{{EARLY_MONTH}}` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `user_uid` char(16) NOT NULL DEFAULT '' COMMENT '用户ID',
+  `task_id` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '任务ID',
+  `is_active` bit(1) NOT NULL DEFAULT b'0' COMMENT '有效',
+  `important` tinyint(3) UNSIGNED NOT NULL DEFAULT 0 COMMENT '重要程度',
+  `message` text NULL COMMENT '消息内容',
+  `read_time` datetime(0) NULL DEFAULT NULL COMMENT '阅读时间',
+  `delay_start_time` datetime(0) NULL DEFAULT NULL COMMENT '推迟开始时间',
+  `start_time` datetime(0) NULL DEFAULT NULL COMMENT '开始时间',
+  `stop_time` datetime(0) NULL DEFAULT NULL COMMENT '结束时间',
+  `start_clock` char(8) NULL DEFAULT NULL COMMENT '开始时刻',
+  `stop_clock` char(8) NULL DEFAULT NULL COMMENT '结束时刻',
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_cron_notice_task_id`(`task_id`) USING BTREE,
+  INDEX `idx_cron_notice_user_uid`(`user_uid`) USING BTREE,
   INDEX `idx_cron_notice_read_time`(`read_time`) USING BTREE,
   INDEX `idx_cron_notice_delay_start_time`(`delay_start_time`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COMMENT = '消息提醒' ROW_FORMAT = DYNAMIC;
@@ -106,7 +126,7 @@ CREATE TABLE IF NOT EXISTS `t_cron_notice_{{CURR_MONTH}}` (
 DROP TABLE IF EXISTS `t_cron_task`;
 CREATE TABLE `t_cron_task` (
   `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `user_id` int(10) UNSIGNED NULL DEFAULT 0 COMMENT '用户ID',
+  `user_uid` char(16) NOT NULL DEFAULT '' COMMENT '用户ID',
   `refer_id` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '关联任务ID',
   `is_active` bit(1) NOT NULL DEFAULT b'0' COMMENT '有效',
   `behind` smallint(6) NOT NULL DEFAULT 0 COMMENT '相对推迟/提前多少分钟',
@@ -118,7 +138,7 @@ CREATE TABLE `t_cron_task` (
   `last_error` text NULL COMMENT '出错信息',
   PRIMARY KEY (`id`) USING BTREE,
   INDEX `idx_cron_task_refer_id`(`refer_id`) USING BTREE,
-  INDEX `idx_cron_task_user_id`(`user_id`) USING BTREE,
+  INDEX `idx_cron_task_user_uid`(`user_uid`) USING BTREE,
   INDEX `idx_cron_task_last_time`(`last_time`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COMMENT = '定时任务' ROW_FORMAT = DYNAMIC;
 
@@ -127,28 +147,6 @@ CREATE TABLE `t_cron_task` (
 -- ----------------------------
 DROP TABLE IF EXISTS `t_cron_timer`;
 CREATE TABLE `t_cron_timer` (
-  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `task_id` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '任务ID',
-  `is_active` bit(1) NOT NULL DEFAULT b'0' COMMENT '有效',
-  `run_date` date NULL DEFAULT NULL COMMENT '指定日期',
-  `run_clock` char(8) NULL DEFAULT NULL COMMENT '具体时间',
-  PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_cron_timer_task_id`(`task_id`) USING BTREE,
-  INDEX `idx_cron_timer_run_date`(`run_date`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COMMENT = '定时执行' ROW_FORMAT = DYNAMIC;
-
-CREATE TABLE IF NOT EXISTS `t_cron_timer_{{LAST_MONTH}}` (
-  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `task_id` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '任务ID',
-  `is_active` bit(1) NOT NULL DEFAULT b'0' COMMENT '有效',
-  `run_date` date NULL DEFAULT NULL COMMENT '指定日期',
-  `run_clock` char(8) NULL DEFAULT NULL COMMENT '具体时间',
-  PRIMARY KEY (`id`) USING BTREE,
-  INDEX `idx_cron_timer_task_id`(`task_id`) USING BTREE,
-  INDEX `idx_cron_timer_run_date`(`run_date`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COMMENT = '定时执行' ROW_FORMAT = DYNAMIC;
-
-CREATE TABLE IF NOT EXISTS `t_cron_timer_{{CURR_MONTH}}` (
   `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `task_id` int(10) UNSIGNED NOT NULL DEFAULT 0 COMMENT '任务ID',
   `is_active` bit(1) NOT NULL DEFAULT b'0' COMMENT '有效',

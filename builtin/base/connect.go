@@ -57,6 +57,20 @@ func BlindlyQuote(engine *xorm.Engine, sep string, words ...string) string {
 	return result
 }
 
+func CreateTableLike(engine *xorm.Engine, curr, orig string) (bool, error) {
+	if engine.DriverName() != "mysql" {
+		err := fmt.Errorf("Only support mysql/mariadb database !")
+		return false, err
+	}
+	exists, err := engine.IsTableExist(curr)
+	if err != nil || exists {
+		return false, err
+	}
+	sql := "CREATE TABLE IF NOT EXISTS %s LIKE %s"
+	_, err = engine.Exec(Qprintf(engine, sql, curr, orig))
+	return err == nil, err
+}
+
 // 获取Model的字段列表
 func GetPrimarykey(engine *xorm.Engine, m interface{}) *schemas.Column {
 	table, err := engine.TableInfo(m)

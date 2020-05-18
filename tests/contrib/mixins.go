@@ -2,8 +2,11 @@ package contrib
 
 import (
 	"strings"
+	"time"
 
 	"gitea.com/azhai/refactor/builtin/access"
+	"gitea.com/azhai/refactor/builtin/base"
+	"gitea.com/azhai/refactor/tests/models/cron"
 	db "gitea.com/azhai/refactor/tests/models/default"
 )
 
@@ -34,4 +37,27 @@ func (p Permission) CheckPerm(act uint16, url string) bool {
 		return false
 	}
 	return access.ContainAction(uint16(p.PermCode), act, false)
+}
+
+type CronTimerMonthly struct {
+	cron.CronTimer     `json:",inline" xorm:"extends"`
+	*base.MonthlyMixin `json:"-" xorm:"-"`
+}
+
+func (m CronTimerMonthly) TableName() string {
+	if m.MonthlyMixin == nil {
+		m.MonthlyMixin = base.NewMonthlyMixin(time.Now())
+	}
+	table := m.CronTimer.TableName()
+	suffix := m.MonthlyMixin.GetSuffix()
+	return table + "_" + suffix
+}
+
+func (m CronTimerMonthly) ResetTable(curr string, trunc bool) error {
+	table := m.CronTimer.TableName()
+	create, err := base.CreateTableLike(cron.Engine(), curr, table)
+	if err == nil && !create && trunc {
+		err = TruncTable(curr)
+	}
+	return err
 }
