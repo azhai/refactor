@@ -78,8 +78,9 @@ func TestJoin02LeftJoinQuery(t *testing.T) {
 	query.AddLeftJoin(group, "gid", "vice_gid", "V")
 
 	var objs []*contrib.UserWithGroup
-	query = query.AddFilter(filter).Limit(20)
-	_, err := query.FindAndCount(&objs)
+	pageno, pagesize := 1, 20
+	query = query.AddFilter(filter)
+	_, err := query.FindPaginate(pageno, pagesize, &objs)
 	assert.NoError(t, err)
 	if testing.Verbose() {
 		pp.Println(objs)

@@ -41,11 +41,11 @@ func Qprintf(engine *xorm.Engine, format string, args ...interface{}) string {
 	return fmt.Sprintf(format, args...)
 }
 
-// 盲转义
+// 盲转义，认定字段名以小写字母开头
 func BlindlyQuote(engine *xorm.Engine, sep string, words ...string) string {
 	repl := engine.Quote("$1")
 	origin := strings.Join(words, sep)
-	re := regexp.MustCompile("([a-z][a-z0-9_]+)")
+	re := regexp.MustCompile("([a-z][a-zA-Z0-9_]+)")
 	result := re.ReplaceAllString(origin, repl)
 	if pad := (len(repl) - len("$1")) / 2; pad > 0 {
 		left, right := repl[:pad], repl[len(repl)-pad:]
@@ -58,26 +58,29 @@ func BlindlyQuote(engine *xorm.Engine, sep string, words ...string) string {
 	return result
 }
 
-func FindTables(engine *xorm.Engine, table string, fullName bool) []string {
+// 找出符合前缀的表名
+func FindTables(engine *xorm.Engine, prefix string, fullName bool) []string {
 	var result []string
 	db, ctx := engine.DB(), context.Background()
 	tables, err := engine.Dialect().GetTables(db, ctx)
 	if err != nil {
 		return result
 	}
-	prelen := len(table)
+	prelen := len(prefix)
 	for _, t := range tables {
-		if strings.HasPrefix(t.Name, table) {
-			if fullName {
-				result = append(result, t.Name)
-			} else {
-				result = append(result, t.Name[prelen:])
-			}
+		if prelen > 0 && !strings.HasPrefix(t.Name, prefix) {
+			continue
+		}
+		if fullName {
+			result = append(result, t.Name)
+		} else {
+			result = append(result, t.Name[prelen:])
 		}
 	}
 	return result
 }
 
+// 复制表结构，只用于MySQL
 func CreateTableLike(engine *xorm.Engine, curr, orig string) (bool, error) {
 	if engine.DriverName() != "mysql" {
 		err := fmt.Errorf("Only support mysql/mariadb database !")
@@ -113,22 +116,34 @@ func NegativeOffset(offset, pagesize, total int) int {
 }
 
 // 计算翻页
-func Paginate(query *xorm.Session, pageno, pagesize int) *xorm.Session {
+func CalcPage(pageno, pagesize, total int) (int, int) {
 	if pagesize < 0 {
-		return query
+		return -1, 0
 	} else if pagesize == 0 {
-		return query.Limit(0)
+		return 0, 0
 	}
 	var offset int
 	if pageno > 0 {
 		offset = (pageno - 1) * pagesize
-	} else if pageno < 0 {
-		total, err := query.Count()
-		if err == nil && total > 0 {
-			offset = NegativeOffset(pageno*pagesize, pagesize, int(total))
-		}
+	} else if pageno < 0 && total > 0 {
+		offset = NegativeOffset(pageno*pagesize, pagesize, total)
 	}
-	return query.Limit(pagesize, offset)
+	return pagesize, offset
+}
+
+// 使用翻页
+func Paginate(query *xorm.Session, pageno, pagesize int) *xorm.Session {
+	var limit, offset int
+	if pagesize > 0 && pageno < 0 {
+		total, _ := query.Count()
+		limit, offset = CalcPage(pageno, pagesize, int(total))
+	} else {
+		limit, offset = CalcPage(pageno, pagesize, 0)
+	}
+	if limit >= 0 {
+		query = query.Limit(limit, offset)
+	}
+	return query
 }
 
 /**

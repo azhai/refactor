@@ -92,10 +92,10 @@ func TestCron03FridayRecords(t *testing.T) {
 	total, err := query.ClusterCount()
 	pp.Println("total:", total)
 	assert.NoError(t, err)
-	/*if err == nil && total > 0 {
+	if err == nil && total > 0 {
 		var objs []*contrib.CronTimerCluster
-		_, err = m.ClusterFindAndCount(filter(query), &objs)
+		_, err = query.ClusterPaginate(2, 5, &objs)
 		assert.NoError(t, err)
 		pp.Println(objs)
-	}*/
+	}
 }

@@ -226,10 +226,12 @@ func (q *ClusterQuery) OrderBy(order string) *ClusterQuery {
 	return q
 }
 
+// 获取当前表名
 func (q *ClusterQuery) GetTable() string {
 	return q.TableNamePrefix + q.GetSuffix()
 }
 
+// 重新构建当前查询，因为每次 COUNT 和 FIND 等操作会释放查询（只有主表名还保留着）
 func (q *ClusterQuery) GetQuery() *xorm.Session {
 	query := q.Session.Clone()
 	query = query.Table(q.GetTable())
@@ -239,14 +241,12 @@ func (q *ClusterQuery) GetQuery() *xorm.Session {
 	return query
 }
 
-func (q *ClusterQuery) Paginate(pageno, pagesize int) *xorm.Session {
-	return Paginate(q.GetQuery(), pageno, pagesize)
-}
-
+// 计数，只查询当前表
 func (q *ClusterQuery) Count(bean ...interface{}) (int64, error) {
 	return q.GetQuery().Count(bean...)
 }
 
+// 计数和获取结果集，只查询当前表
 func (q *ClusterQuery) FindAndCount(rowsSlicePtr interface{}, condiBean ...interface{}) (int64, error) {
 	return q.GetQuery().FindAndCount(rowsSlicePtr, condiBean...)
 }
@@ -257,23 +257,17 @@ func (q *ClusterQuery) clusterCounts(bean ...interface{}) (map[string]int64, err
 		return counts, nil
 	}
 	q.SetTime(time.Now(), true)
-	for {
+	for ok := true; ok; ok = q.Prev() {
 		count, err := q.GetQuery().Count(bean...)
 		if err != nil {
 			return counts, err
 		}
 		counts[q.GetTable()] = count
-		if !q.Prev() {
-			break
-		}
 	}
 	return counts, nil
 }
 
-func (q *ClusterQuery) ClusterPaginate(pageno, pagesize int) *xorm.Session {
-	return Paginate(q.GetQuery(), pageno, pagesize)
-}
-
+// 分布式计数，查询全部表
 func (q *ClusterQuery) ClusterCount(bean ...interface{}) (int64, error) {
 	counts, err := q.clusterCounts(bean...)
 	if err != nil {
@@ -286,14 +280,31 @@ func (q *ClusterQuery) ClusterCount(bean ...interface{}) (int64, error) {
 	return total, nil
 }
 
-func (q *ClusterQuery) ClusterFindAndCount(rowsSlicePtr interface{}, condiBean ...interface{}) (int64, error) {
-	counts, err := q.clusterCounts()
-	if err != nil {
-		return 0, err
+// 分布式计数和翻页，查询全部表，但只获取部分结果集
+func (q *ClusterQuery) ClusterPaginate(pageno, pagesize int,
+	rowsSlicePtr interface{}, condiBean ...interface{}) (int64, error) {
+	if q.Suffixes.Len() == 0 {
+		return 0, nil
 	}
+	q.SetTime(time.Now(), true)
 	var total int64
-	for _, count := range counts {
+	limit, offset := CalcPage(pageno, pagesize, 0)
+	for ok := true; ok; ok = q.Prev() {
+		count, err := q.GetQuery().Count()
+		if err != nil {
+			return total, err
+		}
 		total += count
+		if limit <= 0 || count == 0 {
+			continue
+		}
+		if offset >= int(count) {
+			offset -= int(count)
+		} else {
+			query := q.GetQuery().Limit(limit, offset)
+			err = query.Find(rowsSlicePtr, condiBean...)
+			limit, offset = limit+offset-int(count), 0
+		}
 	}
 	return total, nil
 }

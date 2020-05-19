@@ -31,6 +31,7 @@ type ForeignTable struct {
 	Index string
 }
 
+// 表名或别名，通常用于字段之前
 func (f ForeignTable) AliasName() string {
 	if f.Alias != "" {
 		return f.Alias
@@ -38,10 +39,11 @@ func (f ForeignTable) AliasName() string {
 	return f.Table.TableName()
 }
 
+// 表名和别名，通常用于 FROM 或 JOIN 之后
 func (f ForeignTable) TableName() string {
 	table := f.Table.TableName()
 	if f.Alias != "" {
-		return fmt.Sprintf("%s as %s", table, f.Alias)
+		return fmt.Sprintf("%s AS %s", table, f.Alias)
 	}
 	return table
 }
@@ -57,6 +59,7 @@ type LeftJoinQuery struct {
 	*xorm.Session
 }
 
+// native 为最左侧的主表，查询其所有字段
 func NewLeftJoinQuery(engine *xorm.Engine, native ITableName) *LeftJoinQuery {
 	nativeTable := native.TableName()
 	return &LeftJoinQuery{
@@ -83,6 +86,7 @@ func (q *LeftJoinQuery) AddFilter(filter FilterFunc) *LeftJoinQuery {
 	return q
 }
 
+// foreign 为副表，只查询其部分字段，读取字段的 json tag 作为字段名
 func (q *LeftJoinQuery) LeftJoin(foreign ITableName, fkey string) *LeftJoinQuery {
 	q.AddLeftJoin(foreign, "", fkey, "")
 	return q
@@ -122,6 +126,7 @@ func (q *LeftJoinQuery) OrderBy(order string) *LeftJoinQuery {
 	return q
 }
 
+// 重新构建当前查询，因为每次 COUNT 和 FIND 等操作会释放查询（只有主表名还保留着）
 func (q *LeftJoinQuery) GetQuery() *xorm.Session {
 	buf := new(bytes.Buffer)
 	buf.WriteString(Qprintf(q.engine, "%s.*", q.Native.TableName()))
@@ -139,10 +144,7 @@ func (q *LeftJoinQuery) GetQuery() *xorm.Session {
 	return query.Select(buf.String())
 }
 
-func (q *LeftJoinQuery) Paginate(pageno, pagesize int) *xorm.Session {
-	return Paginate(q.GetQuery(), pageno, pagesize)
-}
-
+// 计数，由于左联接数量只跟主表有关，这里不去 JOIN
 func (q *LeftJoinQuery) Count(bean ...interface{}) (int64, error) {
 	query := q.Session.Clone()
 	for _, filter := range q.filters {
@@ -151,11 +153,26 @@ func (q *LeftJoinQuery) Count(bean ...interface{}) (int64, error) {
 	return query.Count(bean...)
 }
 
-func (q *LeftJoinQuery) FindAndCount(rowsSlicePtr interface{}, condiBean ...interface{}) (int64, error) {
+// 计数和获取结果集
+func (q *LeftJoinQuery) FindAndCount(
+	rowsSlicePtr interface{}, condiBean ...interface{}) (int64, error) {
 	total, err := q.Count()
 	if err != nil || total == 0 {
 		return total, err
 	}
 	err = q.GetQuery().Find(rowsSlicePtr, condiBean...)
+	return total, err
+}
+
+// 计数和翻页，只获取部分结果集
+func (q *LeftJoinQuery) FindPaginate(pageno, pagesize int,
+	rowsSlicePtr interface{}, condiBean ...interface{}) (int64, error) {
+	total, err := q.Count()
+	limit, offset := CalcPage(pageno, pagesize, int(total))
+	query := q.GetQuery()
+	if limit >= 0 {
+		query = query.Limit(limit, offset)
+	}
+	err = query.Find(rowsSlicePtr, condiBean...)
 	return total, err
 }

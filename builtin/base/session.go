@@ -86,6 +86,7 @@ func (sess *Session) GetKey() string {
 	return ""
 }
 
+// 添加临时消息
 func (sess *Session) AddFlash(messages ...string) (int, error) {
 	key := fmt.Sprintf("flash:%s", sess.GetKey())
 	args := append([]interface{}{key}, utils.StrToList(messages)...)
