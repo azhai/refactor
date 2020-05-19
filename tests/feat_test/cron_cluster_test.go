@@ -6,6 +6,8 @@ import (
 
 	"gitea.com/azhai/refactor/builtin/base"
 
+	"xorm.io/xorm"
+
 	"gitea.com/azhai/refactor/tests/contrib"
 	_ "gitea.com/azhai/refactor/tests/models"
 	"gitea.com/azhai/refactor/tests/models/cron"
@@ -57,12 +59,12 @@ func TestCron02AddRecords(t *testing.T) {
 	}
 
 	var objs []base.IResetTable
-	obj := contrib.CronTimerMonthly{}
+	obj := contrib.CronTimerCluster{}
 	obj.TaskId, obj.IsActive = 1, 1
 	for start.Unix() <= end.Unix() {
 		ymd := start.Format("2006-01-02")
 		obj.RunDate = start
-		obj.MonthlyMixin = base.NewMonthlyMixin(start)
+		obj.ClusterMixin = base.NewClusterMonthly(start)
 		if start.Weekday() == 1 {
 			obj.RunClock = "09:00:00"
 			start = start.Add(time.Hour * 24 * 4)
@@ -77,4 +79,23 @@ func TestCron02AddRecords(t *testing.T) {
 	}
 	_, err := base.ClusterInsertMulti(cron.Engine(), objs, true, true)
 	assert.NoError(t, err)
+}
+
+// 找出所有周五的会议时间记录
+func TestCron03FridayRecords(t *testing.T) {
+	filter := func(query *xorm.Session) *xorm.Session {
+		return query.Where("run_clock = ?", "16:30:00")
+	}
+	m := contrib.NewCronTimerCluster()
+	query := base.NewClusterQuery(cron.Engine(), m.ClusterMixin)
+	query.AddFilter(filter).OrderBy("run_date DESC")
+	total, err := query.ClusterCount()
+	pp.Println("total:", total)
+	assert.NoError(t, err)
+	/*if err == nil && total > 0 {
+		var objs []*contrib.CronTimerCluster
+		_, err = m.ClusterFindAndCount(filter(query), &objs)
+		assert.NoError(t, err)
+		pp.Println(objs)
+	}*/
 }

@@ -2,7 +2,6 @@ package contrib
 
 import (
 	"strings"
-	"time"
 
 	"gitea.com/azhai/refactor/builtin/access"
 	"gitea.com/azhai/refactor/builtin/base"
@@ -39,21 +38,31 @@ func (p Permission) CheckPerm(act uint16, url string) bool {
 	return access.ContainAction(uint16(p.PermCode), act, false)
 }
 
-type CronTimerMonthly struct {
+type CronTimerCluster struct {
 	cron.CronTimer     `json:",inline" xorm:"extends"`
-	*base.MonthlyMixin `json:"-" xorm:"-"`
+	*base.ClusterMixin `json:"-" xorm:"-"`
 }
 
-func (m CronTimerMonthly) TableName() string {
-	if m.MonthlyMixin == nil {
-		m.MonthlyMixin = base.NewMonthlyMixin(time.Now())
-	}
+func NewCronTimerCluster() *CronTimerCluster {
+	ct := cron.CronTimer{}
+	prefix := ct.TableName() + "_"
+	cm := base.GetClusterMixinFor("Monthly", prefix, cron.Engine())
+	curr := prefix + cm.GetSuffix()
+	m := &CronTimerCluster{ct, cm}
+	m.ResetTable(curr, false)
+	return m
+}
+
+func (m CronTimerCluster) TableName() string {
 	table := m.CronTimer.TableName()
-	suffix := m.MonthlyMixin.GetSuffix()
+	if m.ClusterMixin == nil {
+		return table
+	}
+	suffix := m.ClusterMixin.GetSuffix()
 	return table + "_" + suffix
 }
 
-func (m CronTimerMonthly) ResetTable(curr string, trunc bool) error {
+func (m CronTimerCluster) ResetTable(curr string, trunc bool) error {
 	table := m.CronTimer.TableName()
 	create, err := base.CreateTableLike(cron.Engine(), curr, table)
 	if err == nil && !create && trunc {

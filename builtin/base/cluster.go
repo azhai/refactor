@@ -1,6 +1,9 @@
 package base
 
 import (
+	"sort"
+	"strconv"
+	"strings"
 	"time"
 
 	"xorm.io/xorm"
@@ -39,42 +42,258 @@ func ClusterInsertMulti(xi xorm.Interface, objs []IResetTable, reset, trunc bool
 	return
 }
 
+var clusters = make(map[string]*ClusterMixin)
+
+func GetClusterMixinFor(kind, prefix string, engine *xorm.Engine) *ClusterMixin {
+	key := kind + ":" + prefix
+	if c, ok := clusters[key]; ok {
+		return c
+	}
+	c := NewClusterMixin(kind, time.Now())
+	c.TableNamePrefix = prefix
+	c.Suffixes = FindTables(engine, prefix, false)
+	c.Suffixes.Sort()
+	clusters[key] = c
+	return c
+}
+
 // 按月分表
-type MonthlyMixin struct {
-	Suffixes []string
-	Date     time.Time
-	Format   string
+type ClusterMixin struct {
+	Date            time.Time
+	Suffixes        sort.StringSlice
+	TableNamePrefix string
+	Kind, Format    string
 }
 
-func NewMonthlyMixin(t time.Time) *MonthlyMixin {
-	m := &MonthlyMixin{Format: "200601"}
-	return m.SetTime(t)
+func NewClusterMixin(kind string, t time.Time) *ClusterMixin {
+	m := &ClusterMixin{Kind: kind}
+	return m.SetTime(t, true)
 }
 
-func (m MonthlyMixin) GetSuffix() string {
-	return m.Date.Format(m.Format)
+func NewClusterQuarterly(t time.Time) *ClusterMixin {
+	return NewClusterMixin("Quarterly", t)
 }
 
-func (m *MonthlyMixin) SetTime(t time.Time) *MonthlyMixin {
-	if t.IsZero() {
+func NewClusterMonthly(t time.Time) *ClusterMixin {
+	return NewClusterMixin("Monthly", t)
+}
+
+func NewClusterWeekly(t time.Time) *ClusterMixin {
+	return NewClusterMixin("Weekly", t)
+}
+
+func NewClusterDaily(t time.Time) *ClusterMixin {
+	return NewClusterMixin("Daily", t)
+}
+
+func NewClusterHourly(t time.Time) *ClusterMixin {
+	return NewClusterMixin("Hourly", t)
+}
+
+func (m ClusterMixin) GetSuffix() string {
+	if !strings.Contains(m.Format, "%") {
+		return m.Date.Format(m.Format)
+	}
+	s := m.Date.Format("2006010215")
+	year, week := m.Date.ISOWeek()
+	yearday := m.Date.YearDay()
+	weekday := int(m.Date.Weekday())
+	quarter := int(m.Date.Month()+2) / 3
+	repl := strings.NewReplacer(
+		"%Y", s[:4], "%m", s[4:6], "%d", s[6:8], "%H", s[8:],
+		"%R", strconv.Itoa(year), "%W", strconv.Itoa(week),
+		"%D", strconv.Itoa(yearday), "%w", strconv.Itoa(weekday),
+		"%Q", strconv.Itoa(quarter),
+	)
+	return repl.Replace(m.Format)
+}
+
+func (m *ClusterMixin) SetTime(t time.Time, toFirst bool) *ClusterMixin {
+	if !toFirst || t.IsZero() {
 		m.Date = t
 		return m
 	}
-	year, month, _ := t.Date()
 	loc := time.Local
-	m.Date = time.Date(year, month, 1, 0, 0, 0, 0, loc)
+	year, month, day := t.Date()
+	switch m.Kind {
+	case "Quarterly":
+		month = (month + 2) / 3
+		m.Date = time.Date(year, month, 1, 0, 0, 0, 0, loc)
+		m.Format = "%Y%Q"
+	case "Monthly":
+		m.Date = time.Date(year, month, 1, 0, 0, 0, 0, loc)
+		m.Format = "200601"
+	case "Weekly":
+		day = day - int(t.Weekday())
+		m.Date = time.Date(year, month, day, 0, 0, 0, 0, loc)
+		m.Format = "%R0%W"
+	case "Daily":
+		m.Date = time.Date(year, month, day, 0, 0, 0, 0, loc)
+		m.Format = "20060102"
+	case "Hourly":
+		m.Date = time.Date(year, month, day, t.Hour(), 0, 0, 0, loc)
+		m.Format = "2006010215"
+	}
 	return m
 }
 
-func (m *MonthlyMixin) Move(n int) *MonthlyMixin {
-	m.Date = m.Date.AddDate(0, n, 0)
+func (m *ClusterMixin) Move(n int) *ClusterMixin {
+	switch m.Kind {
+	case "Quarterly":
+		m.Date = m.Date.AddDate(0, n*3, 0)
+	case "Monthly":
+		m.Date = m.Date.AddDate(0, n, 0)
+	case "Weekly":
+		m.Date = m.Date.AddDate(0, 0, n*7)
+	case "Daily":
+		m.Date = m.Date.AddDate(0, 0, n)
+	case "Hourly":
+		m.Date = m.Date.Add(time.Hour * time.Duration(n))
+	}
 	return m
 }
 
-func (m *MonthlyMixin) Prev() *MonthlyMixin {
-	return m.Move(-1)
+func (m *ClusterMixin) Prev() bool {
+	suffix := m.GetSuffix()
+	idx := m.Suffixes.Search(suffix)
+	if idx < 1 || suffix != m.Suffixes[idx] {
+		return false
+	}
+	target := m.Suffixes[idx-1]
+	for m.GetSuffix() > target {
+		m.Move(-1)
+	}
+	return m.GetSuffix() == target
 }
 
-func (m *MonthlyMixin) Next() *MonthlyMixin {
-	return m.Move(1)
+func (m *ClusterMixin) Next() bool {
+	suffix := m.GetSuffix()
+	idx := m.Suffixes.Search(suffix)
+	max := m.Suffixes.Len() - 1
+	if idx < 0 || idx >= max || suffix != m.Suffixes[idx] {
+		return false
+	}
+	target := m.Suffixes[idx+1]
+	for m.GetSuffix() < target {
+		m.Move(1)
+	}
+	return m.GetSuffix() == target
+}
+
+// 分布式查询
+type ClusterQuery struct {
+	engine  *xorm.Engine
+	filters []FilterFunc
+	*ClusterMixin
+	*xorm.Session
+}
+
+func NewClusterQuery(engine *xorm.Engine, cluster *ClusterMixin) *ClusterQuery {
+	table := cluster.TableNamePrefix + cluster.GetSuffix()
+	return &ClusterQuery{
+		engine:       engine,
+		filters:      nil,
+		ClusterMixin: cluster,
+		Session:      engine.Table(table),
+	}
+}
+
+func (q ClusterQuery) Quote(value string) string {
+	return q.engine.Quote(value)
+}
+
+func (q *ClusterQuery) ClearFilters() *ClusterQuery {
+	q.filters = make([]FilterFunc, 0)
+	return q
+}
+
+func (q *ClusterQuery) AddFilter(filter FilterFunc) *ClusterQuery {
+	q.filters = append(q.filters, filter)
+	return q
+}
+
+func (q *ClusterQuery) Limit(limit int, start ...int) *ClusterQuery {
+	q.AddFilter(func(query *xorm.Session) *xorm.Session {
+		return query.Limit(limit, start...)
+	})
+	return q
+}
+
+func (q *ClusterQuery) OrderBy(order string) *ClusterQuery {
+	q.AddFilter(func(query *xorm.Session) *xorm.Session {
+		return query.OrderBy(order)
+	})
+	return q
+}
+
+func (q *ClusterQuery) GetTable() string {
+	return q.TableNamePrefix + q.GetSuffix()
+}
+
+func (q *ClusterQuery) GetQuery() *xorm.Session {
+	query := q.Session.Clone()
+	query = query.Table(q.GetTable())
+	for _, filter := range q.filters {
+		query = filter(query)
+	}
+	return query
+}
+
+func (q *ClusterQuery) Paginate(pageno, pagesize int) *xorm.Session {
+	return Paginate(q.GetQuery(), pageno, pagesize)
+}
+
+func (q *ClusterQuery) Count(bean ...interface{}) (int64, error) {
+	return q.GetQuery().Count(bean...)
+}
+
+func (q *ClusterQuery) FindAndCount(rowsSlicePtr interface{}, condiBean ...interface{}) (int64, error) {
+	return q.GetQuery().FindAndCount(rowsSlicePtr, condiBean...)
+}
+
+func (q *ClusterQuery) clusterCounts(bean ...interface{}) (map[string]int64, error) {
+	counts := make(map[string]int64)
+	if q.Suffixes.Len() == 0 {
+		return counts, nil
+	}
+	q.SetTime(time.Now(), true)
+	for {
+		count, err := q.GetQuery().Count(bean...)
+		if err != nil {
+			return counts, err
+		}
+		counts[q.GetTable()] = count
+		if !q.Prev() {
+			break
+		}
+	}
+	return counts, nil
+}
+
+func (q *ClusterQuery) ClusterPaginate(pageno, pagesize int) *xorm.Session {
+	return Paginate(q.GetQuery(), pageno, pagesize)
+}
+
+func (q *ClusterQuery) ClusterCount(bean ...interface{}) (int64, error) {
+	counts, err := q.clusterCounts(bean...)
+	if err != nil {
+		return 0, err
+	}
+	var total int64
+	for _, count := range counts {
+		total += count
+	}
+	return total, nil
+}
+
+func (q *ClusterQuery) ClusterFindAndCount(rowsSlicePtr interface{}, condiBean ...interface{}) (int64, error) {
+	counts, err := q.clusterCounts()
+	if err != nil {
+		return 0, err
+	}
+	var total int64
+	for _, count := range counts {
+		total += count
+	}
+	return total, nil
 }

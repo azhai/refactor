@@ -1,6 +1,7 @@
 package base
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strings"
@@ -53,6 +54,26 @@ func BlindlyQuote(engine *xorm.Engine, sep string, words ...string) string {
 			"'" + left, "'", left + "'", "'",
 		}
 		result = strings.NewReplacer(oldnew...).Replace(result)
+	}
+	return result
+}
+
+func FindTables(engine *xorm.Engine, table string, fullName bool) []string {
+	var result []string
+	db, ctx := engine.DB(), context.Background()
+	tables, err := engine.Dialect().GetTables(db, ctx)
+	if err != nil {
+		return result
+	}
+	prelen := len(table)
+	for _, t := range tables {
+		if strings.HasPrefix(t.Name, table) {
+			if fullName {
+				result = append(result, t.Name)
+			} else {
+				result = append(result, t.Name[prelen:])
+			}
+		}
 	}
 	return result
 }
