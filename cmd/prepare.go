@@ -6,6 +6,10 @@ import (
 	"gitea.com/azhai/refactor/config"
 )
 
+const (
+	VERSION = "0.9.9"
+)
+
 var (
 	settings *config.Settings
 	verbose  bool // 详细输出

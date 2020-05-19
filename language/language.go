@@ -5,8 +5,8 @@
 package language
 
 import (
-	"html/template"
 	"strings"
+	"text/template"
 
 	"gitea.com/azhai/refactor/config"
 	"xorm.io/xorm/schemas"

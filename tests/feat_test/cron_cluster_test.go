@@ -1,19 +1,17 @@
-package crud_test
+package feat_test
 
 import (
 	"testing"
 	"time"
 
 	"gitea.com/azhai/refactor/builtin/base"
-
-	"xorm.io/xorm"
-
 	"gitea.com/azhai/refactor/tests/contrib"
 	_ "gitea.com/azhai/refactor/tests/models"
 	"gitea.com/azhai/refactor/tests/models/cron"
 	db "gitea.com/azhai/refactor/tests/models/default"
 	"github.com/k0kubun/pp"
 	"github.com/stretchr/testify/assert"
+	"xorm.io/xorm"
 )
 
 type Dict = map[string]interface{}

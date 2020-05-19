@@ -2,6 +2,7 @@ package contrib
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -29,6 +30,37 @@ func CountRows(tableName string, excludeDeleted bool) int {
 		return -1
 	}
 	return int(total)
+}
+
+func GetUserInfo(user *db.User) map[string]interface{} {
+	info := map[string]interface{}{
+		"username": user.Username,
+	}
+	if user.Id > 0 {
+		info["id"] = strconv.Itoa(user.Id)
+	}
+	if user.Realname != "" {
+		info["realname"] = user.Realname
+	}
+	if user.Mobile != "" {
+		info["mobile"] = user.Mobile
+	}
+	if user.Avatar != "" {
+		info["avatar"] = user.Avatar
+	}
+	if user.Introduction != "" {
+		info["introduction"] = user.Introduction
+	}
+	return info
+}
+
+func GetUserRoles(user *db.User) (roles []string, err error) {
+	if user.Uid == "" {
+		return
+	}
+	query := db.Table(db.UserRole{}).Cols("role_name")
+	err = query.Where("user_uid = ?", user.Uid).Find(&roles)
+	return
 }
 
 func NewMenu(path, title, icon string) *db.Menu {

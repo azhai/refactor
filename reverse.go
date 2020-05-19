@@ -7,10 +7,10 @@ package refactor
 import (
 	"bytes"
 	"errors"
-	"html/template"
 	"io/ioutil"
 	"os"
 	"strings"
+	"text/template"
 
 	"github.com/azhai/gozzo-utils/filesystem"
 

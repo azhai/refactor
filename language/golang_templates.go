@@ -2,8 +2,8 @@ package language
 
 import (
 	"fmt"
-	"html/template"
 	"strings"
+	"text/template"
 )
 
 var (
@@ -40,17 +40,30 @@ import (
 	"github.com/gomodule/redigo/redis"
 )
 
+const (
+	SESS_CREATE_TIMEOUT = 3600
+	SESS_RESCUE_TIMEOUT = SESS_CREATE_TIMEOUT / 4
+)
+
 var (
 	sessreg *base.SessionRegistry
 )
 
 // 初始化、连接数据库和缓存
 func Initialize(r *config.ReverseSource, verbose bool) {
+	var wrapper *redisw.RedisWrapper
 	d := config.ReverseSource2RedisDialect(r)
-	dial := func() (redis.Conn, error) {
-		return d.Connect(verbose)
+	conn, err := d.Connect(verbose)
+	if err == nil {
+		wrapper = redisw.NewRedisConnMux(conn)
+		wrapper.MaxReadTime = 0 // 不支持 ConnWithTimeout 和 DoWithTimeout
+	} else {
+		dial := func() (redis.Conn, error) {
+			return d.Connect(verbose)
+		}
+		wrapper = redisw.NewRedisPool(dial, -1)
 	}
-	sessreg = base.NewRegistry(redisw.NewRedisPool(dial, -1))
+	sessreg = base.NewRegistry(wrapper)
 }
 
 // 获得当前会话管理器
@@ -63,7 +76,12 @@ func Session(token string) *base.Session {
 	if sessreg == nil {
 		return nil
 	}
-	return sessreg.GetSession(token)
+	sess := sessreg.GetSession(token, SESS_CREATE_TIMEOUT)
+	timeout := sess.GetTimeout(false)
+	if timeout >= 0 && timeout < SESS_RESCUE_TIMEOUT {
+		sess.Expire(SESS_CREATE_TIMEOUT)
+	}
+	return sess
 }
 
 // 删除会话

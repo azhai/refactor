@@ -1,4 +1,4 @@
-package crud_test
+package feat_test
 
 import (
 	"testing"

@@ -10,12 +10,16 @@ import (
 )
 
 const (
-	MAX_TIMEOUT     = 86400 * 30 // 接近无限时间
-	SESS_ONLINE_KEY = "onlines"  // 在线用户
-	SESS_TOKEN_KEY  = "_token_"
+	SESS_FOR_EVER   = -1 // 无限
+	SESS_NOT_EXISTS = -2 // 不存在
+	SESS_ERR_REDIS  = -3 // redis错误
+
 	SESS_PREFIX     = "sess" // 会话缓存前缀
-	SESS_TIMEOUT    = 7200   // 会话缓存时间
 	SESS_LIST_SEP   = ";"    // 角色名之间的分隔符
+	SESS_TOKEN_KEY  = "_token_"
+	SESS_ONLINE_KEY = "onlines" // 在线用户
+
+	MAX_TIMEOUT = 86400 * 30 // 接近无限时间
 )
 
 func SessListJoin(data []string) string {
@@ -44,12 +48,12 @@ func (sr SessionRegistry) GetKey(token string) string {
 	return fmt.Sprintf("%s:%s", SESS_PREFIX, token)
 }
 
-func (sr *SessionRegistry) GetSession(token string) *Session {
+func (sr *SessionRegistry) GetSession(token string, timeout int) *Session {
 	key := sr.GetKey(token)
 	if sess, ok := sr.sessions[key]; ok && sess != nil {
 		return sess
 	}
-	sess := NewSession(sr, key)
+	sess := NewSession(sr, key, timeout)
 	if _, err := sess.SetVal(SESS_TOKEN_KEY, token); err == nil {
 		sr.sessions[key] = sess
 	}
@@ -73,8 +77,8 @@ type Session struct {
 	*redisw.RedisHash
 }
 
-func NewSession(reg *SessionRegistry, key string) *Session {
-	hash := redisw.NewRedisHash(reg.RedisWrapper, key, SESS_TIMEOUT)
+func NewSession(reg *SessionRegistry, key string, timeout int) *Session {
+	hash := redisw.NewRedisHash(reg.RedisWrapper, key, timeout)
 	return &Session{reg: reg, RedisHash: hash}
 }
 
@@ -86,17 +90,26 @@ func (sess *Session) GetKey() string {
 	return ""
 }
 
+func (sess *Session) WrapExec(cmd string, args ...interface{}) (interface{}, error) {
+	// pp.Println(cmd, args)
+	return sess.reg.Exec(cmd, args...)
+}
+
 // 添加临时消息
 func (sess *Session) AddFlash(messages ...string) (int, error) {
 	key := fmt.Sprintf("flash:%s", sess.GetKey())
 	args := append([]interface{}{key}, utils.StrToList(messages)...)
-	return redis.Int(sess.Exec("RPUSH", args...))
+	return redis.Int(sess.WrapExec("RPUSH", args...))
 }
 
 // 数量n为最大取出多少条消息，-1表示所有消息
 func (sess *Session) GetFlashes(n int) ([]string, error) {
+	end := -1
+	if n > 0 {
+		end = n - 1
+	}
 	key := fmt.Sprintf("flash:%s", sess.GetKey())
-	return redis.Strings(sess.Exec("LRANGE", key, 0, n))
+	return redis.Strings(sess.WrapExec("LRANGE", key, 0, end))
 }
 
 // 绑定用户角色，返回旧的sid
@@ -110,7 +123,8 @@ func (sess *Session) BindRoles(uid string, roles []string, kick bool) (string, e
 	_, err = sess.SetVal("uid", uid)
 	_, err = sess.SetVal("roles", SessListJoin(roles))
 	if kick && oldSid != "" { // 清空旧的session
-		sess.reg.Delete(oldSid)
+		flashKey := fmt.Sprintf("flash:%s", oldSid)
+		sess.reg.Delete(oldSid, flashKey)
 	}
 	return oldSid, err
 }

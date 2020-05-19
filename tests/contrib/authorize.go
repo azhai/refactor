@@ -50,12 +50,7 @@ func (a UserAuth) GetUserType() (utype usertype.UserType, err error) {
 
 // 用户拥有的角色
 func (a UserAuth) GetUserRoles() (roles []string, err error) {
-	if a.User == nil || a.User.Uid == "" {
-		return
-	}
-	query := db.Table(db.UserRole{}).Cols("role_name")
-	err = query.Where("user_uid = ?", a.User.Uid).Find(&roles)
-	return
+	return GetUserRoles(a.User)
 }
 
 // 是否静态资源网址

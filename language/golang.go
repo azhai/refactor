@@ -8,11 +8,11 @@ import (
 	"errors"
 	"fmt"
 	"go/token"
-	"html/template"
 	"path/filepath"
 	"reflect"
 	"sort"
 	"strings"
+	"text/template"
 
 	"gitea.com/azhai/refactor/config"
 	"gitea.com/azhai/refactor/rewrite"
@@ -26,8 +26,8 @@ var Golang = Language{
 	Template: golangModelTemplate,
 	Types:    map[string]string{},
 	Funcs: template.FuncMap{
-		"Type": typestring,
-		"Tag":  tag,
+		"Type": type2string,
+		"Tag":  tag2string,
 	},
 	Formatter: rewrite.CleanImportsWriteGolangFile,
 	Importter: genGoImports,
@@ -111,7 +111,7 @@ func genGoImports(tables map[string]*schemas.Table) map[string]string {
 	imports := make(map[string]string)
 	for _, table := range tables {
 		for _, col := range table.Columns() {
-			if typestring(col) == "time.Time" {
+			if type2string(col) == "time.Time" {
 				imports["time"] = ""
 			}
 		}
@@ -119,7 +119,7 @@ func genGoImports(tables map[string]*schemas.Table) map[string]string {
 	return imports
 }
 
-func typestring(col *schemas.Column) string {
+func type2string(col *schemas.Column) string {
 	st := col.SQLType
 	t := schemas.SQLType2Type(st)
 	s := t.String()
@@ -129,21 +129,21 @@ func typestring(col *schemas.Column) string {
 	return s
 }
 
-func tag(table *schemas.Table, col *schemas.Column, genJson bool) template.HTML {
+func tag2string(table *schemas.Table, col *schemas.Column, genJson bool) string {
 	tj, tx := "", tagXorm(table, col)
 	if genJson {
 		tj = tagJson(col)
 	} else {
-		return template.HTML(tx)
+		return tx
 	}
 	if tx == "" {
 		if tj == "" {
 			return ""
 		} else {
-			return template.HTML(tj)
+			return tj
 		}
 	}
-	return template.HTML(tj + " " + tx)
+	return tj + " " + tx
 }
 
 func tagJson(col *schemas.Column) string {
@@ -155,7 +155,7 @@ func tagJson(col *schemas.Column) string {
 
 func tagXorm(table *schemas.Table, col *schemas.Column) string {
 	isNameId := col.FieldName == "Id"
-	isIdPk := isNameId && typestring(col) == "int64"
+	isIdPk := isNameId && type2string(col) == "int64"
 
 	var res []string
 	if !col.Nullable {
