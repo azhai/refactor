@@ -1,3 +1,5 @@
+
+.DS_Store
 .idea/
 .vs/
 .vscode/
@@ -6,10 +8,9 @@ vendor/
 
 *~
 *.bak
+*.exe
 *.sublime-project
 *.sublime-workspace
 *.upx
 
-.DS_Store
-reverse
-reverse.exe
+refactor

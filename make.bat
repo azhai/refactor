@@ -8,6 +8,6 @@ IF "%1" == "all" GOTO all
 IF "%1" == "build" GOTO build
 
 :all
-    del reverse.exe
+    del refactor.exe
 :build
-    go.exe build -ldflags="-s -w" -o reverse.exe ./cmd/reverse/
+    go.exe build -ldflags="-s -w" -o refactor.exe ./cmd/reverse/

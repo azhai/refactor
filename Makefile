@@ -1,4 +1,4 @@
-BINNAME=reverse
+BINNAME=refactor
 RELEASE=-s -w
 UPXBIN=/usr/local/bin/upx
 GOBIN=/usr/local/bin/go
