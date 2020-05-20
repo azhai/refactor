@@ -9,16 +9,20 @@ import (
 )
 
 func main() {
-	app := &cli.App {
-		HideHelp: true,
+	app := &cli.App{
 		Version: cmd.VERSION,
-		Usage: "从数据库导出对应的Model代码",
-		Action: ReverseAction,
+		Usage:   "从数据库导出对应的Model代码",
+		Action:  ReverseAction,
 	}
 	app.Flags = []cli.Flag{
+		&cli.BoolFlag{
+			Name:    "verbose",
+			Aliases: []string{"vv"},
+			Usage:   "输出详细信息",
+		},
 		&cli.StringFlag{
 			Name:    "file",
-			Aliases: []string{"f"},
+			Aliases: []string{"c", "f"},
 			Usage:   "配置文件路径",
 			Value:   "settings.yml",
 		},
@@ -30,8 +34,8 @@ func main() {
 }
 
 func ReverseAction(ctx *cli.Context) (err error) {
+	cfg, verbose := cmd.Prepare(ctx.String("file")), cmd.Verbose()
 	names := ctx.Args().Slice()
-	cfg := cmd.Prepare(ctx.String("file"))
-	err = refactor.ExecReverseSettings(cfg, names...)
+	err = refactor.ExecReverseSettings(cfg, verbose, names...)
 	return
 }

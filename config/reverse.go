@@ -9,7 +9,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/k0kubun/pp"
+	_ "github.com/denisenkom/go-mssqldb"
+	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/lib/pq"
+	//_ "github.com/mattn/go-oci8"
+	_ "github.com/mattn/go-sqlite3"
 	"xorm.io/xorm"
 )
 
@@ -46,7 +50,7 @@ func (r ReverseSource) Connect(verbose bool) (*xorm.Engine, error) {
 	if r.Database == "" || r.ConnStr == "" {
 		return nil, fmt.Errorf("the config of connection is empty")
 	} else if verbose {
-		pp.Println(r.Database, r.ConnStr)
+		fmt.Println("Connect:", r.Database, r.ConnStr)
 	}
 	engine, err := xorm.NewEngine(r.Database, r.ConnStr)
 	if err == nil {

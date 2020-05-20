@@ -12,14 +12,12 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/azhai/gozzo-utils/filesystem"
-
 	"gitea.com/azhai/refactor/config"
 	"gitea.com/azhai/refactor/language"
 	"gitea.com/azhai/refactor/rewrite"
+	"github.com/azhai/gozzo-utils/filesystem"
 	"github.com/gobwas/glob"
 	"github.com/grsmv/inflect"
-	"xorm.io/xorm"
 	"xorm.io/xorm/names"
 	"xorm.io/xorm/schemas"
 )
@@ -71,12 +69,13 @@ func GetCreatedColumn(table *schemas.Table) string {
 	return ""
 }
 
-func GetTableSchemas(source *config.ReverseSource, target *config.ReverseTarget) []*schemas.Table {
-	orm, err := xorm.NewEngine(source.Database, source.ConnStr)
+func GetTableSchemas(source *config.ReverseSource, target *config.ReverseTarget, verbose bool) []*schemas.Table {
 	var tableSchemas []*schemas.Table
-	if err == nil {
-		tableSchemas, _ = orm.DBMetas()
+	engine, err := source.Connect(verbose)
+	if err != nil {
+		panic(err)
 	}
+	tableSchemas, _ = engine.DBMetas()
 	return filterTables(tableSchemas, target.IncludeTables, target.ExcludeTables)
 }
 
@@ -133,7 +132,7 @@ func convertMapper(mapname string) names.Mapper {
 	}
 }
 
-func Reverse(target *config.ReverseTarget, source *config.DataSource) error {
+func Reverse(target *config.ReverseTarget, source *config.DataSource, verbose bool) error {
 	formatter := formatters[target.Formatter]
 	lang := language.GetLanguage(target.Language)
 	if lang != nil {
@@ -147,7 +146,7 @@ func Reverse(target *config.ReverseTarget, source *config.DataSource) error {
 	isRedis := true
 	if source.ReverseSource.Database != "redis" {
 		isRedis = false
-		tableSchemas := GetTableSchemas(source.ReverseSource, target)
+		tableSchemas := GetTableSchemas(source.ReverseSource, target, verbose)
 		err := RunReverse(target, tableSchemas)
 		if err != nil {
 			return err
@@ -309,7 +308,7 @@ func RunReverse(target *config.ReverseTarget, tableSchemas []*schemas.Table) err
 	return nil
 }
 
-func ExecReverseSettings(cfg config.IReverseSettings, names ...string) error {
+func ExecReverseSettings(cfg config.IReverseSettings, verbose bool, names ...string) error {
 	conns := cfg.GetConnConfigMap(names...)
 	targets := cfg.GetReverseTargets()
 	if len(targets) == 0 {
@@ -324,7 +323,7 @@ func ExecReverseSettings(cfg config.IReverseSettings, names ...string) error {
 		}
 		for _, target = range targets {
 			target = target.MergeOptions(d.ConnKey, d.PartConfig)
-			if err := Reverse(&target, d); err != nil {
+			if err := Reverse(&target, d, verbose); err != nil {
 				return err
 			}
 			imports[d.ConnKey] = target.NameSpace

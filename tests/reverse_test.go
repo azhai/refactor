@@ -7,16 +7,16 @@ import (
 	"testing"
 	"time"
 
-	"xorm.io/xorm"
+	"github.com/k0kubun/pp"
 
 	"gitea.com/azhai/refactor"
 	"gitea.com/azhai/refactor/config"
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/k0kubun/pp"
 	"github.com/stretchr/testify/assert"
+	"xorm.io/xorm"
 )
 
 var (
+	verbose     = false
 	configFile  = "./settings.yml"
 	testSqlFile = "./mysql_test.sql"
 )
@@ -48,11 +48,13 @@ func createTables(cfg config.IReverseSettings) (err error) {
 
 func Test01CreateTables(t *testing.T) {
 	cfg, err := config.ReadSettings(configFile)
-	pp.Println(cfg)
+	if verbose {
+		pp.Println(cfg)
+	}
 	assert.NoError(t, err)
 	err = createTables(cfg)
 	assert.NoError(t, err)
-	err = refactor.ExecReverseSettings(cfg)
+	err = refactor.ExecReverseSettings(cfg, verbose)
 	assert.NoError(t, err)
 }
 
