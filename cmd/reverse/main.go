@@ -3,8 +3,8 @@ package main
 import (
 	"os"
 
-	"gitea.com/azhai/refactor"
-	"gitea.com/azhai/refactor/cmd"
+	"github.com/azhai/refactor"
+	"github.com/azhai/refactor/cmd"
 	"github.com/urfave/cli/v2"
 )
 

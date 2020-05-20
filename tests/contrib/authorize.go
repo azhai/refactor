@@ -3,9 +3,9 @@ package contrib
 import (
 	"strings"
 
-	"gitea.com/azhai/refactor/builtin/auth"
-	"gitea.com/azhai/refactor/builtin/usertype"
-	db "gitea.com/azhai/refactor/tests/models/default"
+	"github.com/azhai/refactor/builtin/auth"
+	"github.com/azhai/refactor/builtin/usertype"
+	db "github.com/azhai/refactor/tests/models/default"
 	"github.com/azhai/gozzo-utils/common"
 	"xorm.io/xorm"
 )

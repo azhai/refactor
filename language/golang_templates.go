@@ -34,8 +34,8 @@ func ({{$class}}) TableName() string {
 	golangCacheTemplate = `package {{.Target.NameSpace}}
 
 import (
-	"gitea.com/azhai/refactor/builtin/base"
-	"gitea.com/azhai/refactor/config"
+	"github.com/azhai/refactor/builtin/base"
+	"github.com/azhai/refactor/config"
 	"github.com/azhai/gozzo-utils/redisw"
 	"github.com/gomodule/redigo/redis"
 )
@@ -96,8 +96,8 @@ func DelSession(token string) bool {
 	golangConnTemplate = `package {{.Target.NameSpace}}
 
 import (
-	"gitea.com/azhai/refactor/builtin/base"
-	"gitea.com/azhai/refactor/config"
+	"github.com/azhai/refactor/builtin/base"
+	"github.com/azhai/refactor/config"
 	_ "{{.ImporterPath}}"
 	"xorm.io/xorm"
 )
@@ -172,8 +172,8 @@ func QueryAll(filter base.FilterFunc, pages ...int) *xorm.Session {
 
 {{$initns := .Target.InitNameSpace -}}
 import (
-	"gitea.com/azhai/refactor/cmd"
-	"gitea.com/azhai/refactor/config"
+	"github.com/azhai/refactor/cmd"
+	"github.com/azhai/refactor/config"
 
 	{{- range $dir, $al := .Imports}}
 	{{if ne $al $dir}}{{$al}} {{end -}}

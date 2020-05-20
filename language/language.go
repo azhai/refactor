@@ -8,7 +8,7 @@ import (
 	"strings"
 	"text/template"
 
-	"gitea.com/azhai/refactor/config"
+	"github.com/azhai/refactor/config"
 	"xorm.io/xorm/schemas"
 )
 

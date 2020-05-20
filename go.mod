@@ -1,4 +1,4 @@
-module gitea.com/azhai/refactor
+module github.com/azhai/refactor
 
 go 1.14
 

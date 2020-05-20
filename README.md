@@ -1,4 +1,4 @@
-[![](https://goreportcard.com/badge/gitea.com/azhai/refactor)](https://goreportcard.com/report/gitea.com/azhai/refactor)
+[![](https://goreportcard.com/badge/github.com/azhai/refactor)](https://goreportcard.com/report/github.com/azhai/refactor)
 
 # Xorm-Refactor
 
@@ -49,7 +49,7 @@ package db
 // Filename is models.go
 
 import (
-	"gitea.com/azhai/refactor/builtin/base"
+	"github.com/azhai/refactor/builtin/base"
 )
 
 type Menu struct {
@@ -97,7 +97,7 @@ init.go 中含有 Initialize() 方法，通过下面的方法，在程序入口 
 package main
 
 import (
-	"gitea.com/azhai/refactor/config"
+	"github.com/azhai/refactor/config"
 	"my-project/models/db"
 )
 
@@ -154,7 +154,7 @@ func GetMenus(id int) ([]*db.Menu, error) {
 ## 安装
 
 ```
-go get gitea.com/azhai/refactor
+go get github.com/azhai/refactor
 ```
 
 ## 编译使用

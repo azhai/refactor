@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"os"
 
-	"gitea.com/azhai/refactor/config/dialect"
+	"github.com/azhai/refactor/config/dialect"
 	"gopkg.in/yaml.v2"
 )
 

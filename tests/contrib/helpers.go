@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	"gitea.com/azhai/refactor/builtin/access"
-	"gitea.com/azhai/refactor/builtin/base"
-	"gitea.com/azhai/refactor/tests/models/default"
+	"github.com/azhai/refactor/builtin/access"
+	"github.com/azhai/refactor/builtin/base"
+	"github.com/azhai/refactor/tests/models/default"
 )
 
 // 清空表

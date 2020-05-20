@@ -15,7 +15,7 @@ const MODEL_EXTENDS = "`json:\",inline\" xorm:\"extends\"`"
 var substituteModels = map[string]*ModelSummary{
 	"base.TimeMixin": {
 		Name:   "base.TimeMixin",
-		Import: "gitea.com/azhai/refactor/builtin/base",
+		Import: "github.com/azhai/refactor/builtin/base",
 		Alias:  "",
 		FieldLines: []string{
 			"CreatedAt time.Time `json:\"created_at\" xorm:\"created comment('创建时间') TIMESTAMP\"`       // 创建时间",
@@ -25,7 +25,7 @@ var substituteModels = map[string]*ModelSummary{
 	},
 	"base.NestedMixin": {
 		Name:   "base.NestedMixin",
-		Import: "gitea.com/azhai/refactor/builtin/base",
+		Import: "github.com/azhai/refactor/builtin/base",
 		Alias:  "",
 		FieldLines: []string{
 			"Lft   int `json:\"lft\" xorm:\"notnull default 0 comment('左边界') INT(10)\"`           // 左边界",

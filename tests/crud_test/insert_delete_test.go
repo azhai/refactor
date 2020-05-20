@@ -3,9 +3,9 @@ package crud_test
 import (
 	"testing"
 
-	"gitea.com/azhai/refactor/tests/contrib"
-	_ "gitea.com/azhai/refactor/tests/models"
-	"gitea.com/azhai/refactor/tests/models/default"
+	"github.com/azhai/refactor/tests/contrib"
+	_ "github.com/azhai/refactor/tests/models"
+	"github.com/azhai/refactor/tests/models/default"
 	"github.com/stretchr/testify/assert"
 	"xorm.io/xorm"
 )

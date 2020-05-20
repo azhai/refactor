@@ -3,7 +3,7 @@ package auth
 import (
 	"fmt"
 
-	"gitea.com/azhai/refactor/builtin/usertype"
+	"github.com/azhai/refactor/builtin/usertype"
 	"github.com/azhai/gozzo-utils/common"
 )
 

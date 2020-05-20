@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"testing"
 
-	"gitea.com/azhai/refactor/builtin/auth"
-	"gitea.com/azhai/refactor/builtin/base"
-	"gitea.com/azhai/refactor/tests/contrib"
-	_ "gitea.com/azhai/refactor/tests/models"
-	"gitea.com/azhai/refactor/tests/models/cache"
-	db "gitea.com/azhai/refactor/tests/models/default"
+	"github.com/azhai/refactor/builtin/auth"
+	"github.com/azhai/refactor/builtin/base"
+	"github.com/azhai/refactor/tests/contrib"
+	_ "github.com/azhai/refactor/tests/models"
+	"github.com/azhai/refactor/tests/models/cache"
+	db "github.com/azhai/refactor/tests/models/default"
 	"github.com/stretchr/testify/assert"
 )
 

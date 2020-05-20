@@ -3,12 +3,12 @@ package crud_test
 import (
 	"testing"
 
-	"gitea.com/azhai/refactor/builtin/base"
-	"gitea.com/azhai/refactor/builtin/join"
-	"gitea.com/azhai/refactor/inspect"
-	"gitea.com/azhai/refactor/tests/contrib"
-	_ "gitea.com/azhai/refactor/tests/models"
-	db "gitea.com/azhai/refactor/tests/models/default"
+	"github.com/azhai/refactor/builtin/base"
+	"github.com/azhai/refactor/builtin/join"
+	"github.com/azhai/refactor/inspect"
+	"github.com/azhai/refactor/tests/contrib"
+	_ "github.com/azhai/refactor/tests/models"
+	db "github.com/azhai/refactor/tests/models/default"
 	"github.com/k0kubun/pp"
 	"github.com/stretchr/testify/assert"
 	"xorm.io/xorm"

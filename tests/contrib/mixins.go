@@ -3,10 +3,10 @@ package contrib
 import (
 	"strings"
 
-	"gitea.com/azhai/refactor/builtin/access"
-	"gitea.com/azhai/refactor/builtin/base"
-	"gitea.com/azhai/refactor/tests/models/cron"
-	db "gitea.com/azhai/refactor/tests/models/default"
+	"github.com/azhai/refactor/builtin/access"
+	"github.com/azhai/refactor/builtin/base"
+	"github.com/azhai/refactor/tests/models/cron"
+	db "github.com/azhai/refactor/tests/models/default"
 )
 
 type UserWithGroup struct {

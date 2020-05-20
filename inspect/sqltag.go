@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"gitea.com/azhai/refactor/config"
+	"github.com/azhai/refactor/config"
 )
 
 // StructTag named sql or xorm

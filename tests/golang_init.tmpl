@@ -2,8 +2,8 @@ package models
 
 {{$initns := .Target.InitNameSpace -}}
 import (
-	"gitea.com/azhai/refactor/cmd"
-	"gitea.com/azhai/refactor/config"
+	"github.com/azhai/refactor/cmd"
+	"github.com/azhai/refactor/config"
 
 	{{- range $dir, $al := .Imports}}
 	{{if ne $al $dir}}{{$al}} {{end -}}

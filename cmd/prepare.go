@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"gitea.com/azhai/refactor/config"
+	"github.com/azhai/refactor/config"
 )
 
 const (

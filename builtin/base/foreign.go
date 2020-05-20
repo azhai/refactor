@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 
-	"gitea.com/azhai/refactor/builtin/join"
-	"gitea.com/azhai/refactor/inspect"
+	"github.com/azhai/refactor/builtin/join"
+	"github.com/azhai/refactor/inspect"
 	"xorm.io/xorm"
 )
 

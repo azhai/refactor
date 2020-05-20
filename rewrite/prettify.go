@@ -4,7 +4,7 @@ import (
 	"go/format"
 	"io/ioutil"
 
-	"gitea.com/azhai/refactor/config"
+	"github.com/azhai/refactor/config"
 	"github.com/azhai/gozzo-utils/filesystem"
 	"golang.org/x/tools/imports"
 )

@@ -3,9 +3,9 @@ package feat_test
 import (
 	"testing"
 
-	"gitea.com/azhai/refactor/tests/contrib"
-	_ "gitea.com/azhai/refactor/tests/models"
-	db "gitea.com/azhai/refactor/tests/models/default"
+	"github.com/azhai/refactor/tests/contrib"
+	_ "github.com/azhai/refactor/tests/models"
+	db "github.com/azhai/refactor/tests/models/default"
 	"github.com/stretchr/testify/assert"
 )
 

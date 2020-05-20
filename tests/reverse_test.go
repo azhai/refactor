@@ -9,8 +9,8 @@ import (
 
 	"github.com/k0kubun/pp"
 
-	"gitea.com/azhai/refactor"
-	"gitea.com/azhai/refactor/config"
+	"github.com/azhai/refactor"
+	"github.com/azhai/refactor/config"
 	"github.com/stretchr/testify/assert"
 	"xorm.io/xorm"
 )

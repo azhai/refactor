@@ -14,8 +14,8 @@ import (
 	"strings"
 	"text/template"
 
-	"gitea.com/azhai/refactor/config"
-	"gitea.com/azhai/refactor/rewrite"
+	"github.com/azhai/refactor/config"
+	"github.com/azhai/refactor/rewrite"
 	"github.com/azhai/gozzo-utils/filesystem"
 	"xorm.io/xorm/schemas"
 )
